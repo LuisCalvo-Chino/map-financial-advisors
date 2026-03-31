@@ -15,8 +15,8 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
-REM Sube a la rama remota configurada (p. ej. MAP-FinancialAdvisors si main la sigue)
-git push
+REM Sube main al remoto (rama MAP-FinancialAdvisors si asi esta enlazado el repo)
+git push origin HEAD:MAP-FinancialAdvisors
 if errorlevel 1 (
   echo.
   echo Error al hacer push. Comprueba la rama, la red y tus credenciales de GitHub.
