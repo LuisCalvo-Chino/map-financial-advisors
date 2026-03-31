@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MAP Admin Console</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=Montserrat:wght@400;600&family=Poppins:wght@300;400;600&display=swap"
+    rel="stylesheet"
+  />
+  <script type="module" crossorigin src="../../assets/adminConsole-BmdC2Bmk.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/brand-B4nv3qcu.js">
+  <link rel="modulepreload" crossorigin href="../../assets/firebase-config-DR4FsoVa.js">
+  <link rel="modulepreload" crossorigin href="../../assets/user-schema-DrkO0d5X.js">
+  <link rel="stylesheet" crossorigin href="../../assets/brand-HKqc7-TA.css">
+  <link rel="stylesheet" crossorigin href="../../assets/adminConsole-B1LpcsB_.css">
+</head>
+<body class="map-body map-admin-body" data-shell="app">
+  <header class="map-header map-admin-header">
+      <div class="logo">
+        <a href="../../index.html" class="map-logo-link" aria-label="MAP — Inicio">
+          <img src="../../assets/MAP%20Logo-C4lzpTwz.png" alt="MAP" class="map-logo-img" />
+        </a>
+        <span class="map-admin-title">Consola de Administrador</span>
+      </div>
+    <div id="admin-session" class="admin-session"></div>
+  </header>
+
+  <main class="main-container admin-main">
+    <section class="admin-hero">
+      <div>
+        <p class="home-eyebrow">Administración central</p>
+        <h1 class="dashboard-greeting">Usuarios, planes y accesos</h1>
+        <p class="dashboard-hint">
+          Gestiona permisos, suscripciones y el acceso a las webapps del ecosistema MAP.
+        </p>
+      </div>
+      <div id="admin-toast" class="admin-toast" hidden></div>
+    </section>
+
+    <section class="admin-toolbar">
+      <label class="admin-search">
+        <span class="admin-search__label">Buscar usuario</span>
+        <input
+          id="admin-search-input"
+          class="home-input"
+          type="search"
+          placeholder="Nombre, email o UID"
+        />
+      </label>
+      <div class="admin-toolbar__actions">
+        <button id="admin-search-btn" type="button" class="btn-map-primary">
+          Buscar
+        </button>
+        <button id="admin-reset-btn" type="button" class="btn-map-secondary">
+          Limpiar
+        </button>
+      </div>
+    </section>
+
+    <section id="admin-access-guard" class="auth-error" hidden></section>
+
+    <section id="admin-console" class="admin-console" hidden>
+      <div class="admin-table-shell">
+        <div class="admin-table-shell__top">
+          <p id="admin-result-summary" class="dashboard-hint">
+            Cargando usuarios...
+          </p>
+          <div class="admin-pagination">
+            <button id="admin-prev-btn" type="button" class="btn-map-secondary">
+              Anterior
+            </button>
+            <span id="admin-page-indicator" class="admin-page-indicator">Página 1</span>
+            <button id="admin-next-btn" type="button" class="btn-map-primary">
+              Siguiente
+            </button>
+          </div>
+        </div>
+
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Usuario</th>
+                <th>UID</th>
+                <th>Rol</th>
+                <th>Plan</th>
+                <th>Estado</th>
+                <th>Vencimiento</th>
+              </tr>
+            </thead>
+            <tbody id="admin-user-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <aside id="admin-drawer" class="admin-drawer" aria-hidden="true">
+    <div class="admin-drawer__backdrop" id="admin-drawer-close"></div>
+    <div class="admin-drawer__panel">
+      <div class="admin-drawer__header">
+        <div>
+          <p class="home-eyebrow">Editar usuario</p>
+          <h2 id="drawer-user-name" class="dashboard-greeting">Usuario MAP</h2>
+          <p id="drawer-user-email" class="dashboard-hint"></p>
+        </div>
+        <button id="drawer-close-btn" type="button" class="map-modal__close">✕</button>
+      </div>
+      <form id="admin-user-form" class="admin-drawer__form">
+        <div class="profile-field">
+          <label class="home-label" for="drawer-role">Rol</label>
+          <select id="drawer-role" class="home-input">
+            <option value="usuario">Usuario</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+
+        <div class="profile-field">
+          <label class="home-label" for="drawer-status">Estado de acceso</label>
+          <select id="drawer-status" class="home-input">
+            <option value="active">Activo</option>
+            <option value="suspended">Suspendido</option>
+          </select>
+        </div>
+
+        <div class="profile-field">
+          <label class="home-label" for="drawer-plan-type">Plan</label>
+          <select id="drawer-plan-type" class="home-input">
+            <option value="free">Free</option>
+            <option value="basico">Básico</option>
+            <option value="profesional">Profesional</option>
+            <option value="vitalicio">Vitalicio</option>
+          </select>
+        </div>
+
+        <div class="admin-drawer__quick-actions">
+          <button id="drawer-add-month" type="button" class="btn-map-secondary">+1 Mes</button>
+          <button id="drawer-add-year" type="button" class="btn-map-secondary">+1 Año</button>
+          <button id="drawer-set-lifetime" type="button" class="btn-map-primary">Vitalicio</button>
+        </div>
+
+        <div class="profile-field">
+          <label class="home-label" for="drawer-plan-expiry">Fecha de vencimiento</label>
+          <input id="drawer-plan-expiry" class="home-input" type="date" />
+        </div>
+
+        <div class="profile-field">
+          <label class="home-label">Apps activas</label>
+          <div id="drawer-apps-grid" class="admin-app-checklist"></div>
+        </div>
+
+        <div class="admin-drawer__footer">
+          <button id="drawer-save-btn" type="submit" class="btn-map-primary">
+            Guardar cambios
+          </button>
+        </div>
+      </form>
+    </div>
+  </aside>
+
+</body>
+</html>
