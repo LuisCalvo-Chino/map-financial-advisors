@@ -21,7 +21,28 @@ export function firebaseAuthMessage(error) {
     "auth/network-request-failed": "Error de red. Revisa tu conexión.",
     "auth/credential-already-in-use": "Esta cuenta ya está vinculada a otro usuario.",
     "auth/account-exists-with-different-credential": "Ya existe una cuenta con este correo usando otro método.",
+    "auth/unauthorized-domain":
+      "Este dominio no está autorizado en Firebase. En la consola de Firebase: Autenticación → Configuración → Dominios autorizados, añade el dominio desde el que abres la web (por ejemplo tu-sitio.github.io o localhost).",
+    "auth/operation-not-allowed":
+      "Este método de acceso está desactivado en el proyecto. En Firebase: Autenticación → Método de inicio, activa Correo/contraseña o Google según corresponda.",
+    "auth/popup-blocked":
+      "El navegador bloqueó la ventana de Google. Permite ventanas emergentes para este sitio o prueba en otra ventana.",
+    "auth/invalid-api-key":
+      "La clave de API de Firebase no es válida o tiene restricciones. Revisa .env.local y, en Google Cloud, restricciones de la API key (referrers).",
+    "auth/internal-error":
+      "Error interno de autenticación. Prueba más tarde, otro navegador o borra datos del sitio.",
+    "auth/missing-email": "Falta el correo electrónico.",
+    "auth/missing-password": "Escribe tu contraseña.",
+    "auth/requires-recent-login":
+      "Por seguridad, cierra sesión y vuelve a entrar para continuar.",
   };
 
-  return map[code] || "No se pudo completar la acción. Inténtalo de nuevo.";
+  if (map[code]) return map[code];
+
+  const fallback =
+    "No se pudo completar la acción. Inténtalo de nuevo.";
+  if (code && code.startsWith("auth/")) {
+    return `${fallback} (código técnico: ${code})`;
+  }
+  return fallback;
 }
