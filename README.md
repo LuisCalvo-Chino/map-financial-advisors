@@ -35,6 +35,18 @@ Los artefactos quedan en `dist/` (no se versionan).
 
 Este repositorio documenta la **carcasa del portal**, flujos de usuario, integración Firebase y, donde aplique, herramientas de apoyo. La **lógica operativa detallada de administración**, políticas internas y datos reales de clientes **no forman parte del código público** y deben mantenerse fuera del control de versiones o en entornos restringidos.
 
+## Git y GitHub
+
+El remoto configurado es [map-financial-advisors](https://github.com/LuisCalvo-Chino/map-financial-advisors.git). La rama local `main` puede estar enlazada a la rama remota **`MAP-FinancialAdvisors`** (por un conflicto previo en GitHub: existía una rama mal nombrada `main/ChinoPCMasterWebSite` que impedía usar `main` en el remoto).
+
+Para dejar el remoto “limpio” y usar solo `main`:
+
+1. En GitHub: **Settings → General → Default branch** → elige `MAP-FinancialAdvisors` (o otra rama válida).
+2. Elimina la rama **`main/ChinoPCMasterWebSite`** desde la pestaña **Branches**.
+3. Opcional: renombra `MAP-FinancialAdvisors` a `main` en GitHub y ejecuta `git branch --set-upstream-to=origin/main main` en tu PC.
+
+Para subir cambios después del primer push puedes usar `push_map.bat` en la raíz del proyecto.
+
 ## Licencia y uso
 
 Uso interno / MAP salvo que se indique lo contrario.
