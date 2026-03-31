@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAP - Gestión Patrimonial</title>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=Montserrat:wght@400;600&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./brand.css">
+</head>
+<body class="map-body" data-shell="booting">
+
+    <header class="map-header">
+      <div class="logo">
+        <a href="./index.html" class="map-logo-link" aria-label="MAP — Inicio">
+          <img src="./img/MAP Logo.png" alt="MAP" class="map-logo-img" />
+        </a>
+      </div>
+        <nav id="nav-modules" class="map-nav-modules" aria-label="Módulos"></nav>
+        <div id="user-profile"></div>
+    </header>
+
+    <main id="main-container" class="main-container">
+        <div id="shell-boot" class="shell-boot" aria-live="polite" aria-busy="true">
+            <div class="shell-boot__inner">
+                <p class="shell-boot__mark">MAP</p>
+                <p class="shell-boot__text">Conectando con el portal…</p>
+            </div>
+        </div>
+    </main>
+
+    <footer class="map-footer">
+        <p>&copy; 2026 MAP - Asesores Patrimoniales. Todos los derechos reservados.</p>
+        <div class="footer-links">
+            <a href="./legal/terminos.html">Términos y Condiciones</a>
+            <a href="./legal/privacidad.html">Privacidad</a>
+        </div>
+    </footer>
+
+    <script type="module" src="./src/main-app.js"></script>
+</body>
+</html>

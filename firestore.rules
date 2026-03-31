@@ -1,0 +1,49 @@
+rules_version = '2';
+service cloud.firestore {
+  function isSignedIn() {
+    return request.auth != null;
+  }
+
+  function isAdmin() {
+    return isSignedIn()
+      && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid))
+      && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'admin';
+  }
+
+  function validSignupDoc() {
+    return request.resource.data.keys().hasOnly([
+      'nombre',
+      'email',
+      'rol',
+      'status',
+      'plan',
+      'apps_activas'
+    ])
+      && request.resource.data.nombre is string
+      && request.resource.data.email is string
+      && request.resource.data.rol == 'usuario'
+      && request.resource.data.status == 'active'
+      && request.resource.data.apps_activas is list
+      && request.resource.data.plan is map
+      && request.resource.data.plan.tipo == 'free'
+      && request.resource.data.plan.fecha_inicio is timestamp
+      && request.resource.data.plan.fecha_vencimiento == null;
+  }
+
+  match /databases/{database}/documents {
+    match /usuarios/{userId} {
+      allow read: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
+      allow list: if isAdmin();
+      allow create: if isSignedIn()
+        && request.auth.uid == userId
+        && validSignupDoc();
+      allow update: if isAdmin();
+      allow delete: if false;
+    }
+
+    match /webapps/{appId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+  }
+}
