@@ -1,52 +1,41 @@
-# MAP — Ecosistema web
+# 🌐 Ecosistema Digital MAP
+> **Plataforma Integral de Gestión para Asesores Patrimoniales.**
 
-Portal y aplicaciones del ecosistema **MAP** (gestión patrimonial y acceso a webapps). El proyecto usa **Vite**, **Firebase** (autenticación y datos) y una interfaz alineada con la identidad visual de la marca.
+MAP es un ecosistema avanzado diseñado para centralizar la operación de asesores en las áreas de **Inversión, Seguros y Salud**. A través de una arquitectura de "Shell" inteligente, permite gestionar múltiples WebApps, conectar APIs externas y administrar carteras de clientes de forma segura y eficiente.
 
-## Requisitos
+---
 
-- Node.js LTS
-- Cuenta y proyecto Firebase configurado
+## 🚀 Características Principales
 
-## Puesta en marcha
+* **Dashboard Inteligente:** Interfaz modular basada en cuadrículas que carga aplicaciones según el plan del usuario.
+* **Gestión de Suscripciones:** Motor de administración con control de vencimientos, estados de cuenta y niveles de acceso (Free, Básico, Pro, Vitalicio).
+* **Seguridad Bancaria:** Autenticación unificada mediante Firebase Auth (Google y Email/Password vinculados) y reglas de seguridad en Firestore a nivel de documento.
+* **Consola de Administración:** Panel centralizado para la gestión masiva de usuarios, filtrado avanzado y control de suspensiones.
 
-1. Clona el repositorio.
-2. Copia `.env.example` a `.env.local` y completa las variables `VITE_FIREBASE_*` con los datos de tu consola Firebase.
-3. Instala dependencias e inicia en desarrollo:
+## 🛠️ Stack Tecnológico
 
-```bash
-npm install
-npm run dev
-```
+* **Core:** JavaScript ES6+ (Módulos nativos)
+* **Frontend Tooling:** [Vite](https://vitejs.dev/)
+* **Backend:** [Google Firebase](https://firebase.google.com/) (Firestore, Auth)
+* **Estilos:** CSS3 Custom Properties (Brand MAP Design System)
+* **Fuentes:** Gilroy & Montserrat
 
-4. Build de producción:
+---
 
-```bash
-npm run build
-```
+## 📂 Configuración Local
 
-Los artefactos quedan en `dist/` (no se versionan).
+Si deseas revisar el entorno de desarrollo:
 
-## Seguridad
+1.  Clona el repositorio.
+2.  Instala las dependencias: `npm install`.
+3.  Crea un archivo `.env.local` basado en el `.env.example` proporcionado.
+4.  Inicia el servidor de desarrollo: `npm run dev`.
 
-- **No subas** `.env`, `.env.local` ni claves al repositorio. Solo existe `.env.example` como plantilla sin secretos.
-- Las variables expuestas al cliente deben usar el prefijo `VITE_` (comportamiento de Vite).
+---
 
-## Ámbito público vs privado
+## ⚖️ Licencia y Propiedad Intelectual
 
-Este repositorio documenta la **carcasa del portal**, flujos de usuario, integración Firebase y, donde aplique, herramientas de apoyo. La **lógica operativa detallada de administración**, políticas internas y datos reales de clientes **no forman parte del código público** y deben mantenerse fuera del control de versiones o en entornos restringidos.
+Este proyecto es **Propiedad Privada**. El código fuente está disponible para revisión técnica bajo una licencia **Polyform Non-Commercial**. Se prohíbe cualquier uso comercial, copia o distribución no autorizada de la arquitectura de este ecosistema.
 
-## Git y GitHub
-
-El remoto configurado es [map-financial-advisors](https://github.com/LuisCalvo-Chino/map-financial-advisors.git). La rama local `main` puede estar enlazada a la rama remota **`MAP-FinancialAdvisors`** (por un conflicto previo en GitHub: existía una rama mal nombrada `main/ChinoPCMasterWebSite` que impedía usar `main` en el remoto).
-
-Para dejar el remoto “limpio” y usar solo `main`:
-
-1. En GitHub: **Settings → General → Default branch** → elige `MAP-FinancialAdvisors` (o otra rama válida).
-2. Elimina la rama **`main/ChinoPCMasterWebSite`** desde la pestaña **Branches**.
-3. Opcional: renombra `MAP-FinancialAdvisors` a `main` en GitHub y ejecuta `git branch --set-upstream-to=origin/main main` en tu PC.
-
-Para subir cambios después del primer push puedes usar `push_map.bat` en la raíz del proyecto.
-
-## Licencia y uso
-
-Uso interno / MAP salvo que se indique lo contrario.
+**Desarrollado por:** [Luis Diego Calvo Esquivel](https://github.com/TuUsuario)
+**Ubicación:** Costa Rica 🇨🇷
