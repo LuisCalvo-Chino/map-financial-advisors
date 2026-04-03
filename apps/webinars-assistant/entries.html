@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MAP — Inscripciones del formulario</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=Montserrat:wght@400;600&family=Poppins:wght@300;400;600&display=swap"
+    rel="stylesheet"
+  />
+  <script type="module" crossorigin src="../../assets/brand-DHf4xJt0.js"></script>
+  <script type="module" crossorigin src="../../assets/firebase-config-BJGMYP3z.js"></script>
+  <script type="module" crossorigin src="../../assets/user-schema-zU-iyuhU.js"></script>
+  <script type="module" crossorigin src="../../assets/ui-shell-CAP1PXY6.js"></script>
+  <script type="module" crossorigin src="../../assets/gmail-backend-QjONWBZj.js"></script>
+  <script type="module" crossorigin src="../../assets/auth-handler-FnbgAEjZ.js"></script>
+  <script type="module" crossorigin src="../../assets/webinars-header-DnwixVI4.js"></script>
+  <script type="module" crossorigin src="../../assets/preload-helper-Dp1pzeXC.js"></script>
+  <script type="module" crossorigin src="../../assets/webinar-form-ui-Dzy3ofTA.js"></script>
+  <script type="module" crossorigin src="../../assets/logic-admin-DTlXQzQV.js"></script>
+  <link rel="stylesheet" crossorigin href="../../assets/brand-yQ7YVYfT.css">
+  <link rel="stylesheet" crossorigin href="../../assets/webinars-header-DnyLwFTV.css">
+</head>
+<body class="map-body map-webinars-body" data-shell="app" data-webinars-view="entries">
+  <header class="map-header">
+    <div class="logo">
+      <a href="../../index.html" class="map-logo-link" aria-label="MAP — Inicio">
+        <img src="../../assets/MAP%20Logo-C4lzpTwz.png" alt="MAP" class="map-logo-img" />
+      </a>
+    </div>
+    <nav id="nav-modules" class="map-nav-modules" aria-label="Módulos"></nav>
+    <div id="user-profile"></div>
+  </header>
+
+  <main class="main-container webinars-main webinars-main--entries">
+    <section id="webinars-access-guard" class="webinars-guard">
+      <h2>Validando acceso</h2>
+      <p>Comprobando permisos…</p>
+    </section>
+
+    <section id="webinars-entries-panel" class="webinars-panel" hidden>
+      <div class="webinars-entries-toolbar">
+        <div class="webinars-entries-toolbar__left">
+          <a class="btn-map-secondary btn-map-secondary--small" href="./index.html">← Formularios</a>
+          <button type="button" id="entries-btn-csv" class="btn-map-secondary btn-map-secondary--small">
+            Descargar CSV
+          </button>
+        </div>
+        <div class="webinars-entries-toolbar__right">
+          <a id="entries-btn-edit" class="btn-map-secondary btn-map-secondary--small" href="#">Editar</a>
+          <a id="entries-btn-messages" class="btn-map-secondary btn-map-secondary--small" href="#">Mensajes</a>
+        </div>
+      </div>
+      <h1 id="entries-form-title" class="webinars-entries-title">Inscripciones</h1>
+      <p id="entries-status" class="webinars-dashboard-status" role="status" hidden></p>
+      <div id="entries-table-wrap" class="webinars-entries-table-wrap"></div>
+    </section>
+  </main>
+
+</body>
+</html>

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MAP Webinars Assistant</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=Montserrat:wght@400;600&family=Poppins:wght@300;400;600&display=swap"
+    rel="stylesheet"
+  />
+  <script type="module" crossorigin src="../../assets/brand-DHf4xJt0.js"></script>
+  <script type="module" crossorigin src="../../assets/firebase-config-BJGMYP3z.js"></script>
+  <script type="module" crossorigin src="../../assets/user-schema-zU-iyuhU.js"></script>
+  <script type="module" crossorigin src="../../assets/ui-shell-CAP1PXY6.js"></script>
+  <script type="module" crossorigin src="../../assets/gmail-backend-QjONWBZj.js"></script>
+  <script type="module" crossorigin src="../../assets/auth-handler-FnbgAEjZ.js"></script>
+  <script type="module" crossorigin src="../../assets/webinars-header-DnwixVI4.js"></script>
+  <script type="module" crossorigin src="../../assets/preload-helper-Dp1pzeXC.js"></script>
+  <script type="module" crossorigin src="../../assets/webinar-form-ui-Dzy3ofTA.js"></script>
+  <script type="module" crossorigin src="../../assets/logic-admin-DTlXQzQV.js"></script>
+  <link rel="stylesheet" crossorigin href="../../assets/brand-yQ7YVYfT.css">
+  <link rel="stylesheet" crossorigin href="../../assets/webinars-header-DnyLwFTV.css">
+</head>
+<body class="map-body map-webinars-body" data-shell="app" data-webinars-view="dashboard">
+  <header class="map-header">
+    <div class="logo">
+      <a href="../../index.html" class="map-logo-link" aria-label="MAP — Inicio">
+        <img src="../../assets/MAP%20Logo-C4lzpTwz.png" alt="MAP" class="map-logo-img" />
+      </a>
+    </div>
+    <nav id="nav-modules" class="map-nav-modules" aria-label="Módulos"></nav>
+    <div id="user-profile"></div>
+  </header>
+
+  <main class="main-container webinars-main">
+    <section id="webinars-access-guard" class="webinars-guard">
+      <h2>Verificando acceso al asistente</h2>
+      <p>Comprobando tu sesion y plan MAP antes de abrir el panel de webinars.</p>
+    </section>
+
+    <section id="webinars-dashboard" class="webinars-panel" hidden>
+      <div class="webinars-hero">
+        <div>
+          <p class="webinars-eyebrow">Dashboard</p>
+          <h1>MAP Financial Advisors</h1>
+          <p>
+            Central de formularios con envíos automáticos o manuales.
+          </p>
+        </div>
+        <button
+          type="button"
+          class="btn-map-secondary webinars-new-cta webinars-new-cta--prominent"
+          data-webinars-new
+          disabled
+          aria-disabled="true"
+          title="Esperando confirmación de sesión…"
+        >
+          + Nuevo formulario
+        </button>
+      </div>
+
+      <p id="webinars-new-status" class="webinars-dashboard-status" role="status" hidden></p>
+
+      <h2 class="webinars-dashboard-list-title">Formularios</h2>
+      <div id="webinars-dashboard-list" class="webinars-dashboard-list-mount"></div>
+    </section>
+  </main>
+
+</body>
+</html>

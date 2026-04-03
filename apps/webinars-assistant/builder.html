@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MAP Webinars Builder</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=Montserrat:wght@400;600&family=Poppins:wght@300;400;600&display=swap"
+    rel="stylesheet"
+  />
+  <script type="module" crossorigin src="../../assets/brand-DHf4xJt0.js"></script>
+  <script type="module" crossorigin src="../../assets/firebase-config-BJGMYP3z.js"></script>
+  <script type="module" crossorigin src="../../assets/user-schema-zU-iyuhU.js"></script>
+  <script type="module" crossorigin src="../../assets/ui-shell-CAP1PXY6.js"></script>
+  <script type="module" crossorigin src="../../assets/gmail-backend-QjONWBZj.js"></script>
+  <script type="module" crossorigin src="../../assets/auth-handler-FnbgAEjZ.js"></script>
+  <script type="module" crossorigin src="../../assets/webinars-header-DnwixVI4.js"></script>
+  <script type="module" crossorigin src="../../assets/preload-helper-Dp1pzeXC.js"></script>
+  <script type="module" crossorigin src="../../assets/webinar-form-ui-Dzy3ofTA.js"></script>
+  <script type="module" crossorigin src="../../assets/logic-admin-DTlXQzQV.js"></script>
+  <link rel="stylesheet" crossorigin href="../../assets/brand-yQ7YVYfT.css">
+  <link rel="stylesheet" crossorigin href="../../assets/webinars-header-DnyLwFTV.css">
+</head>
+<body class="map-body map-webinars-body" data-shell="app" data-webinars-view="builder">
+  <header class="map-header">
+    <div class="logo">
+      <a href="../../index.html" class="map-logo-link" aria-label="MAP — Inicio">
+        <img src="../../assets/MAP%20Logo-C4lzpTwz.png" alt="MAP" class="map-logo-img" />
+      </a>
+    </div>
+    <nav id="nav-modules" class="map-nav-modules" aria-label="Módulos"></nav>
+    <div id="user-profile"></div>
+  </header>
+
+  <main class="main-container webinars-main webinars-main--builder">
+    <section id="webinars-access-guard" class="webinars-guard">
+      <h2>Validando acceso al builder</h2>
+      <p>Necesitas una sesion activa MAP y un plan vigente para continuar.</p>
+    </section>
+
+    <section id="webinars-builder" class="webinars-builder-layout" hidden>
+      <div class="webinars-builder-panel">
+        <div class="webinars-builder-page-nav webinars-entries-toolbar" aria-label="Navegación del formulario">
+          <div class="webinars-entries-toolbar__left">
+            <a class="btn-map-secondary btn-map-secondary--small" href="./index.html">← Formularios</a>
+            <a
+              id="builder-link-entries"
+              class="btn-map-secondary btn-map-secondary--small"
+              href="#"
+              hidden
+            >← Inscripciones</a>
+          </div>
+          <div class="webinars-entries-toolbar__right">
+            <button type="button" id="btn-builder-save-changes" class="btn-map-primary btn-map-secondary--small">
+              Guardar
+            </button>
+          </div>
+        </div>
+        <p class="webinars-eyebrow">Configuración</p>
+        <h1 class="webinars-builder-title">Formulario de inscripción</h1>
+        <p class="webinars-builder-lead">
+          Los cambios en colores y campos se reflejan al instante en la vista previa. Usa <strong>Guardar</strong> para persistir en Firestore.
+        </p>
+
+        <div class="webinars-builder-meta">
+          <div class="webinars-form-field webinars-form-field--full">
+            <label for="builder-firestore-id">Documento Firestore</label>
+            <input id="builder-firestore-id" type="text" readonly value="— (guarda para crear)" />
+          </div>
+          <div class="webinars-form-field webinars-form-field--full">
+            <label for="builder-public-hex">ID público (hex)</label>
+            <input id="builder-public-hex" type="text" readonly placeholder="Se asigna al primer guardado" />
+          </div>
+        </div>
+
+        <div class="webinars-builder-toolbar webinars-builder-toolbar--actions">
+          <button type="button" id="btn-builder-publish" class="btn-map-secondary btn-map-secondary--small" disabled>
+            Publicar y mostrar enlace
+          </button>
+        </div>
+
+        <p id="builder-action-status" class="webinars-builder-status" role="status" aria-live="polite"></p>
+
+        <div id="builder-published-box" class="webinars-published-box" hidden>
+          <p class="webinars-eyebrow">Enlace público</p>
+          <div class="webinars-published-row">
+            <input id="builder-public-link" type="text" readonly class="webinars-published-input" />
+            <button type="button" id="btn-builder-copy-link" class="btn-map-secondary btn-map-secondary--small">Copiar</button>
+          </div>
+        </div>
+
+        <div class="webinars-builder-tabs" role="tablist" aria-label="Secciones del editor">
+          <button
+            type="button"
+            class="webinars-builder-tab webinars-builder-tab--active"
+            role="tab"
+            id="builder-tab-campos"
+            aria-selected="true"
+            aria-controls="builder-panel-campos"
+            data-builder-tab="campos"
+          >
+            Campos
+          </button>
+          <button
+            type="button"
+            class="webinars-builder-tab"
+            role="tab"
+            id="builder-tab-diseno"
+            aria-selected="false"
+            aria-controls="builder-panel-diseno"
+            data-builder-tab="diseno"
+          >
+            Diseño
+          </button>
+        </div>
+
+        <div
+          id="builder-panel-campos"
+          class="webinars-builder-tabpanel"
+          role="tabpanel"
+          aria-labelledby="builder-tab-campos"
+        >
+          <div class="webinars-form-grid webinars-form-grid--compact">
+            <div class="webinars-form-field webinars-form-field--full">
+              <label for="builder-title">Título del webinar</label>
+              <input id="builder-title" type="text" value="Nuevo webinar MAP" autocomplete="off" />
+            </div>
+            <div class="webinars-form-field webinars-form-field--full">
+              <label for="builder-subtitle">Subtítulo / descripción corta</label>
+              <input id="builder-subtitle" type="text" placeholder="Texto bajo el título" autocomplete="off" />
+            </div>
+            <div class="webinars-form-field webinars-form-field--full">
+              <label for="builder-state">Estado</label>
+              <select id="builder-state">
+                <option value="draft">Borrador</option>
+                <option value="published">Publicado</option>
+                <option value="closed">Cerrado</option>
+              </select>
+            </div>
+            <div class="webinars-form-field webinars-form-field--full">
+              <label class="builder-checkbox-label" style="font-weight: 600; margin-top: 0.5rem;">
+                <input id="builder-messaging-enabled" type="checkbox" />
+                Habilitar mensajes (automáticos/manuales)
+              </label>
+              <p class="webinars-field-hint" style="margin-top: 0.25rem;">
+                Al activar esto, el formulario requerirá obligatoriamente un campo de correo electrónico.
+              </p>
+              <div id="builder-messaging-actions" hidden style="margin-top: 0.5rem;">
+                <a id="btn-builder-open-messages" class="btn-map-secondary btn-map-secondary--small" href="#">Lista de mensajes</a>
+              </div>
+            </div>
+          </div>
+
+          <div class="builder-add-field-row">
+            <label class="builder-add-field-label" for="builder-new-field-type">Nuevo campo</label>
+            <div class="builder-add-field-controls">
+              <select id="builder-new-field-type" class="builder-new-field-type">
+                <optgroup label="Entradas de usuario">
+                  <option value="text">Texto corto</option>
+                  <option value="email">Email</option>
+                  <option value="phone">Teléfono internacional</option>
+                  <option value="paragraph">Párrafo</option>
+                </optgroup>
+                <optgroup label="Bloques de contenido">
+                  <option value="title">Título</option>
+                  <option value="static_text">Texto estático</option>
+                  <option value="list">Lista</option>
+                </optgroup>
+              </select>
+              <button type="button" id="btn-builder-add-field" class="btn-map-secondary btn-map-secondary--small">
+                Agregar campo
+              </button>
+            </div>
+          </div>
+
+          <h3 class="webinars-subsection-title">Campos del formulario</h3>
+          <p class="webinars-field-hint builder-field-list-hint">
+            Selecciona un campo para desplegar sus opciones justo debajo de esa fila. Al elegir otro campo, las opciones anteriores se ocultan. Usa las flechas para reordenar.
+          </p>
+          <div class="builder-fields-editor">
+            <ul id="builder-field-list" class="webinars-field-list webinars-field-list--builder"></ul>
+            <div id="builder-field-inspector-park" class="builder-field-inspector-park" aria-hidden="true"></div>
+            <div
+              id="builder-field-inspector"
+              class="builder-field-inspector builder-field-inspector--inline"
+              hidden
+            >
+            <h4 class="builder-inspector-title">Opciones del campo</h4>
+            <div class="webinars-form-grid webinars-form-grid--compact">
+              <div class="webinars-form-field webinars-form-field--full" id="inspector-label-field">
+                <label for="inspector-label">Etiqueta (label) / Título</label>
+                <input id="inspector-label" type="text" autocomplete="off" />
+              </div>
+              <div class="webinars-form-field webinars-form-field--full" id="inspector-placeholder-field">
+                <label for="inspector-placeholder">Placeholder</label>
+                <input id="inspector-placeholder" type="text" autocomplete="off" />
+              </div>
+              
+              <!-- Para bloques de contenido -->
+              <div class="webinars-form-field webinars-form-field--full" id="inspector-content-field" style="display: none;">
+                <label for="inspector-content">Contenido</label>
+                <textarea id="inspector-content" rows="4" autocomplete="off"></textarea>
+              </div>
+              <div class="webinars-form-field webinars-form-field--full" id="inspector-list-type-field" style="display: none;">
+                <label for="inspector-list-type">Tipo de Lista</label>
+                <select id="inspector-list-type">
+                  <option value="bullets">Viñetas (Puntos)</option>
+                  <option value="numbers">Numerada</option>
+                </select>
+              </div>
+
+              <div class="webinars-form-field webinars-form-field--full builder-inspector-required" id="inspector-required-field">
+                <label class="builder-checkbox-label">
+                  <input id="inspector-required" type="checkbox" />
+                  Campo requerido
+                </label>
+              </div>
+            </div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          id="builder-panel-diseno"
+          class="webinars-builder-tabpanel webinars-builder-tabpanel--hidden"
+          role="tabpanel"
+          aria-labelledby="builder-tab-diseno"
+          hidden
+        >
+          <div class="webinars-form-grid">
+            <div class="webinars-form-field webinars-form-field--full">
+              <label for="builder-logo-url">Logo (URL)</label>
+              <input
+                id="builder-logo-url"
+                type="text"
+                inputmode="url"
+                placeholder="Vacío = logo MAP por defecto"
+                autocomplete="off"
+              />
+              <p class="webinars-field-hint">HTTPS opcional. Si la URL falla, se muestra el logo MAP por defecto.</p>
+            </div>
+            <div class="webinars-form-field webinars-form-field--full">
+              <label for="builder-logo-height">Alto del logo (px)</label>
+              <div class="webinars-logo-height-row">
+                <input
+                  id="builder-logo-height"
+                  type="range"
+                  min="100"
+                  max="400"
+                  step="1"
+                  value="180"
+                  aria-valuemin="100"
+                  aria-valuemax="400"
+                />
+                <output id="builder-logo-height-value" class="webinars-logo-height-output" for="builder-logo-height">180</output>
+              </div>
+              <p class="webinars-field-hint">Entre 100 y 400 px. El ancho se ajusta solo manteniendo la proporción.</p>
+            </div>
+            <div class="webinars-form-field webinars-form-field--full">
+              <label for="builder-footer-text">Texto del pie</label>
+              <input id="builder-footer-text" type="text" placeholder="Texto legal o marca" autocomplete="off" />
+            </div>
+            <div class="webinars-form-field">
+              <label for="builder-header-color">Cabecera</label>
+              <input id="builder-header-color" type="color" value="#173862" />
+            </div>
+            <div class="webinars-form-field">
+              <label for="builder-footer-color">Pie</label>
+              <input id="builder-footer-color" type="color" value="#102742" />
+            </div>
+            <div class="webinars-form-field">
+              <label for="builder-background-color">Fondo exterior</label>
+              <input id="builder-background-color" type="color" value="#f4f0ed" />
+            </div>
+            <div class="webinars-form-field">
+              <label for="builder-content-color">Área del formulario</label>
+              <input id="builder-content-color" type="color" value="#ffffff" />
+            </div>
+            <div class="webinars-form-field">
+              <label for="builder-title-color">Color de Títulos</label>
+              <input id="builder-title-color" type="color" value="#173862" />
+            </div>
+            <div class="webinars-form-field">
+              <label for="builder-text-color">Color de Textos</label>
+              <input id="builder-text-color" type="color" value="#102742" />
+            </div>
+            <div class="webinars-form-field">
+              <label for="builder-field-text-color">Etiquetas (labels) de campos</label>
+              <input id="builder-field-text-color" type="color" value="#102742" />
+            </div>
+            <div class="webinars-form-field">
+              <label for="builder-field-input-bg-color">Fondo de campos (área de escritura)</label>
+              <input id="builder-field-input-bg-color" type="color" value="#ffffff" />
+            </div>
+            <div class="webinars-form-field">
+              <label for="builder-field-input-text-color">Texto dentro de campos</label>
+              <input id="builder-field-input-text-color" type="color" value="#102742" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="webinars-builder-preview-column" aria-label="Vista previa en tiempo real">
+        <p class="webinars-eyebrow">Vista previa</p>
+        <h2 class="webinars-preview-column-title">Así verá el usuario el formulario</h2>
+        <div id="builder-final-preview-root" class="builder-final-preview-root"></div>
+      </aside>
+    </section>
+  </main>
+
+  <div id="builder-toast" class="webinars-toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
+
+</body>
+</html>

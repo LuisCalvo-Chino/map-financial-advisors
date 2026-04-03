@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MAP Webinars - Creador de Mensajes</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=Montserrat:wght@400;600&family=Poppins:wght@300;400;600&display=swap"
+    rel="stylesheet"
+  />
+  <script type="module" crossorigin src="../../assets/webinarsMessages-N8ysKR19.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/brand-DHf4xJt0.js">
+  <link rel="modulepreload" crossorigin href="../../assets/firebase-config-BJGMYP3z.js">
+  <link rel="modulepreload" crossorigin href="../../assets/user-schema-zU-iyuhU.js">
+  <link rel="modulepreload" crossorigin href="../../assets/ui-shell-CAP1PXY6.js">
+  <link rel="modulepreload" crossorigin href="../../assets/gmail-backend-QjONWBZj.js">
+  <link rel="modulepreload" crossorigin href="../../assets/auth-handler-FnbgAEjZ.js">
+  <link rel="modulepreload" crossorigin href="../../assets/webinars-header-DnwixVI4.js">
+  <link rel="modulepreload" crossorigin href="../../assets/messaging-model-CJEiLUj0.js">
+  <link rel="stylesheet" crossorigin href="../../assets/brand-yQ7YVYfT.css">
+  <link rel="stylesheet" crossorigin href="../../assets/webinars-header-DnyLwFTV.css">
+</head>
+<body class="map-body map-webinars-body" data-shell="app" data-webinars-view="messages">
+  <header class="map-header">
+    <div class="logo">
+      <a href="../../index.html" class="map-logo-link" aria-label="MAP — Inicio">
+        <img src="../../assets/MAP%20Logo-C4lzpTwz.png" alt="MAP" class="map-logo-img" />
+      </a>
+    </div>
+    <nav id="nav-modules" class="map-nav-modules" aria-label="Módulos"></nav>
+    <div id="user-profile"></div>
+  </header>
+
+  <main class="main-container webinars-main webinars-main--builder">
+    <section id="webinars-access-guard" class="webinars-guard">
+      <h2>Validando acceso al creador de mensajes</h2>
+      <p>Necesitas una sesion activa MAP y un plan vigente para continuar.</p>
+    </section>
+
+    <section id="webinars-messages-builder" class="webinars-builder-layout" hidden>
+      <div class="webinars-builder-panel">
+        <div class="webinars-builder-page-nav webinars-entries-toolbar" aria-label="Navegación">
+          <div class="webinars-entries-toolbar__left">
+            <a class="btn-map-secondary btn-map-secondary--small" href="./index.html">← Formularios</a>
+            <a
+              id="btn-msg-back-builder"
+              class="btn-map-secondary btn-map-secondary--small"
+              href="./form-messages.html"
+            >← Lista de mensajes</a>
+            <a
+              id="msg-link-entries"
+              class="btn-map-secondary btn-map-secondary--small"
+              href="#"
+              hidden
+            >← Inscripciones</a>
+          </div>
+          <div class="webinars-entries-toolbar__right">
+            <button type="button" id="btn-msg-save-changes" class="btn-map-primary btn-map-secondary--small">
+              Guardar
+            </button>
+          </div>
+        </div>
+
+        <p class="webinars-eyebrow">Configuración de mensajes</p>
+        <h1 class="webinars-builder-title">Mensajes del formulario</h1>
+        <p class="webinars-builder-lead">
+          Configura los correos automáticos o manuales para este formulario. Los cambios se reflejan en la vista previa.
+        </p>
+
+        <p id="msg-action-status" class="webinars-builder-status" role="status" aria-live="polite"></p>
+
+        <div class="webinars-form-grid webinars-form-grid--compact">
+          <div class="webinars-form-field webinars-form-field--full">
+            <label for="msg-name">Nombre del mensaje</label>
+            <input id="msg-name" type="text" placeholder="Ej. Bienvenida" autocomplete="off" />
+          </div>
+          <div class="webinars-form-field webinars-form-field--full">
+            <label for="msg-send-format">Formato de envío</label>
+            <select id="msg-send-format">
+              <option value="manual">Manual</option>
+              <option value="automatic">Automático</option>
+            </select>
+          </div>
+          <div id="msg-auto-wrap" class="webinars-form-field webinars-form-field--full" hidden>
+            <label for="msg-auto-trigger">Envío automático</label>
+            <select id="msg-auto-trigger">
+              <option value="registration">Registro (al inscribirse)</option>
+              <option value="scheduled">Fecha programada</option>
+            </select>
+          </div>
+          <div id="msg-scheduled-wrap" class="webinars-form-field webinars-form-field--full" hidden>
+            <label for="msg-scheduled-at">Fecha y hora de envío</label>
+            <input id="msg-scheduled-at" type="datetime-local" />
+          </div>
+          <div class="webinars-form-field webinars-form-field--full">
+            <label class="builder-checkbox-label" style="font-weight: 600;">
+              <input id="msg-template-enabled" type="checkbox" />
+              Habilitar este mensaje
+            </label>
+          </div>
+        </div>
+
+        <div class="webinars-builder-tabs" role="tablist" aria-label="Secciones del editor">
+          <button
+            type="button"
+            class="webinars-builder-tab webinars-builder-tab--active"
+            role="tab"
+            id="msg-tab-contenido"
+            aria-selected="true"
+            aria-controls="msg-panel-contenido"
+            data-msg-tab="contenido"
+          >
+            Contenido
+          </button>
+          <button
+            type="button"
+            class="webinars-builder-tab"
+            role="tab"
+            id="msg-tab-diseno"
+            aria-selected="false"
+            aria-controls="msg-panel-diseno"
+            data-msg-tab="diseno"
+          >
+            Diseño
+          </button>
+        </div>
+
+        <div
+          id="msg-panel-contenido"
+          class="webinars-builder-tabpanel"
+          role="tabpanel"
+          aria-labelledby="msg-tab-contenido"
+        >
+          <div class="webinars-form-grid webinars-form-grid--compact">
+            <div class="webinars-form-field webinars-form-field--full">
+              <label for="msg-subject">Asunto del correo</label>
+              <input id="msg-subject" type="text" placeholder="¡Gracias por registrarte!" autocomplete="off" />
+            </div>
+          </div>
+
+          <h3 class="webinars-subsection-title">Bloques del mensaje</h3>
+          <p class="webinars-field-hint">
+            Añade y ordena títulos, párrafos, listas y botones. Puedes usar variables como <code>{{nombre}}</code> o <code>{{email}}</code>.
+            Selecciona un bloque para editarlo debajo de la fila.
+          </p>
+
+          <div class="builder-add-field-row">
+            <div class="builder-add-field-controls">
+              <select id="msg-new-block-type" class="builder-new-field-type">
+                <optgroup label="Texto">
+                  <option value="title">Título</option>
+                  <option value="text">Párrafo</option>
+                  <option value="list">Lista</option>
+                </optgroup>
+                <optgroup label="Botones">
+                  <option value="zoom">Reunión de Zoom</option>
+                  <option value="youtube">Video de YouTube</option>
+                  <option value="instagram">Instagram</option>
+                  <option value="facebook">Facebook</option>
+                  <option value="whatsapp">WhatsApp</option>
+                  <option value="linkedin">LinkedIn</option>
+                  <option value="generic">Enlace genérico</option>
+                </optgroup>
+              </select>
+              <button type="button" id="btn-msg-add-block" class="btn-map-secondary btn-map-secondary--small">
+                Agregar bloque
+              </button>
+            </div>
+          </div>
+
+          <div class="builder-fields-editor">
+            <ul id="msg-block-list" class="webinars-field-list webinars-field-list--builder"></ul>
+            <div id="msg-block-inspector-park" class="builder-field-inspector-park" aria-hidden="true"></div>
+            <div
+              id="msg-block-inspector"
+              class="builder-field-inspector builder-field-inspector--inline"
+              hidden
+            >
+              <h4 class="builder-inspector-title">Opciones del bloque</h4>
+              <div class="webinars-form-grid webinars-form-grid--compact">
+                <div class="webinars-form-field webinars-form-field--full" id="msg-block-content-field">
+                  <label for="msg-block-content" id="msg-block-content-label">Contenido</label>
+                  <textarea id="msg-block-content" rows="4" autocomplete="off" style="resize: vertical; width: 100%; box-sizing: border-box;"></textarea>
+                </div>
+                <div class="webinars-form-field webinars-form-field--full" id="msg-block-list-type-field" style="display: none;">
+                  <label for="msg-block-list-type">Tipo de Lista</label>
+                  <select id="msg-block-list-type">
+                    <option value="bullets">Viñetas (Puntos)</option>
+                    <option value="numbers">Numerada</option>
+                  </select>
+                </div>
+                <div class="webinars-form-field webinars-form-field--full" id="msg-block-url-field" style="display: none;">
+                  <label for="msg-block-url">Enlace (URL)</label>
+                  <input id="msg-block-url" type="url" placeholder="https://..." autocomplete="off" />
+                </div>
+                <div id="msg-block-zoom-fields" class="webinars-form-grid webinars-form-grid--compact" style="grid-column: 1 / -1; display: none;">
+                  <div class="webinars-form-field webinars-form-field--full">
+                    <label for="msg-block-zoom-id">ID de Reunión</label>
+                    <input id="msg-block-zoom-id" type="text" placeholder="Ej: 844 2411 5825" autocomplete="off" />
+                  </div>
+                  <div class="webinars-form-field webinars-form-field--full">
+                    <label for="msg-block-zoom-pwd">Código de Acceso (Contraseña)</label>
+                    <input id="msg-block-zoom-pwd" type="text" placeholder="Ej: MAP" autocomplete="off" />
+                  </div>
+                </div>
+                <div
+                  id="msg-block-cta-wrap"
+                  class="webinars-form-grid webinars-form-grid--compact"
+                  style="display: none; grid-column: 1 / -1;"
+                >
+                  <p class="webinars-field-hint" style="grid-column: 1 / -1; margin: 0 0 0.25rem;">
+                    Estilo del cuadro que envuelve el botón en el correo.
+                  </p>
+                  <div class="webinars-form-field webinars-form-field--full">
+                    <label for="msg-block-cta-caption">Texto superior (opcional)</label>
+                    <input
+                      id="msg-block-cta-caption"
+                      type="text"
+                      maxlength="240"
+                      placeholder="Ej.: Únete a la sesión en vivo"
+                      autocomplete="off"
+                    />
+                  </div>
+                  <div class="webinars-form-field">
+                    <label for="msg-block-cta-caption-color">Color del texto superior</label>
+                    <input id="msg-block-cta-caption-color" type="color" value="#f4f0ed" />
+                  </div>
+                  <div class="webinars-form-field webinars-form-field--full">
+                    <label for="msg-block-cta-font">Tipografía (texto superior y botón)</label>
+                    <select id="msg-block-cta-font">
+                      <option value="montserrat">Montserrat</option>
+                      <option value="poppins">Poppins</option>
+                      <option value="georgia">Georgia</option>
+                      <option value="arial">Arial / Helvetica</option>
+                    </select>
+                  </div>
+                  <div class="webinars-form-field">
+                    <label for="msg-block-cta-box-bg">Fondo del cuadro</label>
+                    <input id="msg-block-cta-box-bg" type="color" value="#2a2c2c" />
+                  </div>
+                  <div class="webinars-form-field">
+                    <label for="msg-block-cta-box-border">Borde izquierdo del cuadro</label>
+                    <input id="msg-block-cta-box-border" type="color" value="#a89f8f" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          id="msg-panel-diseno"
+          class="webinars-builder-tabpanel webinars-builder-tabpanel--hidden"
+          role="tabpanel"
+          aria-labelledby="msg-tab-diseno"
+          hidden
+        >
+          <div class="webinars-form-grid">
+            <div class="webinars-form-field webinars-form-field--full">
+              <label for="msg-logo-url">Logo (URL)</label>
+              <input
+                id="msg-logo-url"
+                type="text"
+                inputmode="url"
+                placeholder="Vacío = usar logo del formulario"
+                autocomplete="off"
+              />
+            </div>
+            <div class="webinars-form-field webinars-form-field--full">
+              <label for="msg-logo-height">Alto del logo (px)</label>
+              <div class="webinars-logo-height-row">
+                <input
+                  id="msg-logo-height"
+                  type="range"
+                  min="40"
+                  max="200"
+                  step="1"
+                  value="80"
+                  aria-valuemin="40"
+                  aria-valuemax="200"
+                />
+                <output id="msg-logo-height-value" class="webinars-logo-height-output" for="msg-logo-height">80</output>
+              </div>
+              <p class="webinars-field-hint">Entre 40 y 200 px. El ancho se ajusta solo manteniendo la proporción.</p>
+            </div>
+            <div class="webinars-form-field">
+              <label for="msg-header-color">Cabecera</label>
+              <input id="msg-header-color" type="color" value="#173862" />
+            </div>
+            <div class="webinars-form-field">
+              <label for="msg-footer-color">Pie</label>
+              <input id="msg-footer-color" type="color" value="#102742" />
+            </div>
+            <div class="webinars-form-field">
+              <label for="msg-title-color">Color de Títulos</label>
+              <input id="msg-title-color" type="color" value="#FFFFFF" />
+            </div>
+            <div class="webinars-form-field">
+              <label for="msg-text-color">Color de Textos</label>
+              <input id="msg-text-color" type="color" value="#F4F0ED" />
+            </div>
+            <div class="webinars-form-field">
+              <label for="msg-bg-color">Fondo exterior</label>
+              <input id="msg-bg-color" type="color" value="#2A2C2C" />
+            </div>
+            <div class="webinars-form-field">
+              <label for="msg-content-color">Área del mensaje</label>
+              <input id="msg-content-color" type="color" value="#173862" />
+            </div>
+            <div class="webinars-form-field">
+              <label for="msg-btn-color">Color de botones</label>
+              <input id="msg-btn-color" type="color" value="#173862" />
+            </div>
+            <div class="webinars-form-field">
+              <label for="msg-btn-text-color">Texto de botones</label>
+              <input id="msg-btn-text-color" type="color" value="#ffffff" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="webinars-builder-preview-column" aria-label="Vista previa del correo">
+        <p class="webinars-eyebrow">Vista previa</p>
+        <h2 class="webinars-preview-column-title">Así verá el usuario el mensaje</h2>
+        <div id="msg-final-preview-root" class="builder-final-preview-root"></div>
+      </aside>
+    </section>
+  </main>
+
+  <div id="msg-toast" class="webinars-toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
+
+</body>
+</html>
