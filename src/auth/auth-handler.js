@@ -84,7 +84,7 @@ export async function requestGmailAccess() {
   }
 
   const state = createRandomState();
-  const redirectUri = getGmailOAuthRedirectUri(window.location.origin);
+  const redirectUri = getGmailOAuthRedirectUri();
   persistOAuthState(state, {
     uid: user.uid,
     origin: window.location.origin,

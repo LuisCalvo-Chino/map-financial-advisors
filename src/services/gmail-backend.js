@@ -7,8 +7,9 @@ export function getGmailBackendBaseUrl() {
   return (configured || DEFAULT_LOCAL_BACKEND_URL).replace(/\/$/, "");
 }
 
-export function getGmailOAuthRedirectUri(origin = window.location.origin) {
-  return new URL("./gmail-oauth-callback.html", origin).toString();
+export function getGmailOAuthRedirectUri() {
+  // Use current URL as base to preserve subdirectories like /map-financial-advisors/
+  return new URL("./gmail-oauth-callback.html", window.location.href).toString();
 }
 
 export async function fetchGmailPublicBackend(path, payload = {}) {

@@ -36,7 +36,7 @@ async function bootstrapGmailOAuthCallback() {
       throw new Error("La sesión OAuth expiró o no coincide con la ventana que inició el flujo.");
     }
 
-    const redirectUri = getGmailOAuthRedirectUri(saved.origin);
+    const redirectUri = getGmailOAuthRedirectUri();
     const result = await fetchGmailBackend("/api/oauth/callback", {
       code,
       state,

@@ -86,7 +86,7 @@ export async function sendPendingEmails({ limit = 10 } = {}) {
 
   const result = await fetchGmailBackend("/api/gmail/process-queue", {
     limit,
-    redirectUri: getGmailOAuthRedirectUri(window.location.origin),
+    redirectUri: getGmailOAuthRedirectUri(),
   });
   return {
     ok: true,
@@ -176,7 +176,7 @@ export async function sendWebinarEmailNow({ targetEmail = "", subject = "", html
     targetEmail,
     subject,
     html,
-    redirectUri: getGmailOAuthRedirectUri(window.location.origin),
+    redirectUri: getGmailOAuthRedirectUri(),
   });
   return {
     ok: true,
