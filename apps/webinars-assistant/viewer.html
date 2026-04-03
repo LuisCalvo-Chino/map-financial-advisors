@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MAP — Inscripción</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=Montserrat:wght@400;600&family=Poppins:wght@300;400;600&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="../../brand.css" />
+  <link rel="stylesheet" href="./webinars-style.css" />
+</head>
+<body class="map-body map-webinars-body" data-shell="guest" data-webinars-view="viewer">
+  <header class="map-header">
+    <div class="logo">
+      <a href="../../index.html" class="map-logo-link" aria-label="MAP — Inicio">
+        <img src="../../img/MAP Logo.png" alt="MAP" class="map-logo-img" />
+      </a>
+    </div>
+    <nav id="nav-modules" class="map-nav-modules" aria-label="Módulos"></nav>
+    <div id="user-profile"></div>
+  </header>
+
+  <main class="main-container webinars-main webinars-viewer-main">
+    <p id="viewer-top-status" class="webinars-viewer-top-status" role="status" aria-live="polite"></p>
+    <div id="viewer-mount" class="webinars-public-wrap"></div>
+  </main>
+
+  <script type="module" src="./logic-public.js"></script>
+</body>
+</html>

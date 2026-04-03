@@ -18,6 +18,10 @@ import {
 } from "firebase/firestore";
 import { firebaseAuthMessage } from "./auth-messages.js";
 import {
+  isDashboardWebappHidden,
+  isDeprecatedWebappId,
+} from "../config/portal-webapps.js";
+import {
   buildInitialUserProfile,
   normalizeUserDoc,
 } from "../data/user-schema.js";
@@ -27,7 +31,164 @@ import {
   renderHomeAuth,
   setHomeAuthMessage,
 } from "../ui/ui-render.js";
+import { mountUserHeaderMenu } from "../ui/user-header-menu.js";
 import { dismissShellBoot } from "../ui/ui-shell.js";
+import {
+  fetchGmailBackend,
+  getGmailOAuthRedirectUri,
+} from "../services/gmail-backend.js";
+
+const GMAIL_OAUTH_RESULT_EVENT = "map:gmail-oauth-result";
+
+function gmailAccessDocRef(uid) {
+  return doc(db, "usuarios", uid, "private", "gmail_access");
+}
+
+export async function getGmailAccessState(uid) {
+  if (!uid) {
+    return { connected: false, email: "", providerLinked: false, scopes: [] };
+  }
+
+  const snap = await getDoc(gmailAccessDocRef(uid));
+  if (!snap.exists()) {
+    return { connected: false, email: "", providerLinked: false, scopes: [] };
+  }
+
+  const data = snap.data();
+  return {
+    connected: Boolean(data.connected),
+    email: typeof data.email === "string" ? data.email : "",
+    providerLinked: Boolean(data.providerLinked),
+    scopes: Array.isArray(data.scopes) ? data.scopes.map((item) => String(item)) : [],
+  };
+}
+
+async function safeGetGmailAccessState(uid) {
+  try {
+    return await getGmailAccessState(uid);
+  } catch (error) {
+    console.warn("[MAP] No se pudo leer gmail_access; se usará estado pendiente.", error);
+    return {
+      connected: false,
+      email: "",
+      providerLinked: false,
+      scopes: [],
+    };
+  }
+}
+
+export async function requestGmailAccess() {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("Debes iniciar sesión para configurar Gmail Access.");
+  }
+
+  const state = createRandomState();
+  const redirectUri = getGmailOAuthRedirectUri(window.location.origin);
+  persistOAuthState(state, {
+    uid: user.uid,
+    origin: window.location.origin,
+    createdAt: Date.now(),
+  });
+
+  const response = await fetchGmailBackend("/api/oauth/start", {
+    state,
+    redirectUri,
+  });
+  const authUrl = String(response?.authUrl || "");
+  if (!authUrl) {
+    clearOAuthState(state);
+    throw new Error("No se pudo iniciar Gmail Access.");
+  }
+
+  const popup = openCenteredPopup(authUrl, "map-gmail-access");
+  if (!popup) {
+    clearOAuthState(state);
+    throw new Error("El navegador bloqueó la ventana emergente de Gmail Access.");
+  }
+
+  try {
+    const payload = await waitForOAuthResult(state, popup);
+    return {
+      connected: true,
+      email:
+        payload && typeof payload === "object" && "result" in payload
+          ? String(payload.result?.email || user.email || "")
+          : user.email || "",
+    };
+  } finally {
+    clearOAuthState(state);
+  }
+}
+
+function createRandomState() {
+  const bytes = new Uint8Array(24);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function persistOAuthState(state, payload) {
+  window.sessionStorage.setItem(`map:gmail-oauth:${state}`, JSON.stringify(payload));
+}
+
+function clearOAuthState(state) {
+  window.sessionStorage.removeItem(`map:gmail-oauth:${state}`);
+}
+
+function openCenteredPopup(url, name) {
+  const width = 560;
+  const height = 720;
+  const left = Math.max(0, Math.round(window.screenX + (window.outerWidth - width) / 2));
+  const top = Math.max(0, Math.round(window.screenY + (window.outerHeight - height) / 2));
+  return window.open(
+    url,
+    name,
+    `popup=yes,width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+  );
+}
+
+function waitForOAuthResult(state, popup) {
+  return new Promise((resolve, reject) => {
+    const timeout = window.setTimeout(() => {
+      cleanup();
+      reject(new Error("La autorización de Gmail tardó demasiado o fue cancelada."));
+    }, 180000);
+
+    const closedWatcher = window.setInterval(() => {
+      if (popup.closed) {
+        cleanup();
+        reject(new Error("La ventana de Gmail Access se cerró antes de completar el proceso."));
+      }
+    }, 500);
+
+    const onMessage = (event) => {
+      if (event.origin !== window.location.origin) return;
+      const data = event.data;
+      if (!data || data.type !== GMAIL_OAUTH_RESULT_EVENT) return;
+      if (String(data.state || "") !== state) return;
+
+      cleanup();
+      if (data.ok) {
+        resolve(data);
+      } else {
+        reject(new Error(String(data.error || "No se pudo completar Gmail Access.")));
+      }
+    };
+
+    const cleanup = () => {
+      window.clearTimeout(timeout);
+      window.clearInterval(closedWatcher);
+      window.removeEventListener("message", onMessage);
+      try {
+        if (!popup.closed) popup.close();
+      } catch {
+        /* ignore */
+      }
+    };
+
+    window.addEventListener("message", onMessage);
+  });
+}
 
 export async function loginWithGoogle() {
   try {
@@ -113,77 +274,7 @@ export async function linkPasswordAccount(password) {
   await linkWithCredential(user, cred);
 }
 
-function setHeaderUser(user) {
-  const el = document.getElementById("user-profile");
-  if (!el) return;
-
-  if (!user) {
-    el.innerHTML = "";
-    return;
-  }
-
-  const name = user.displayName || user.email || "Usuario";
-  el.innerHTML = `
-    <div class="user-menu-container">
-      <button type="button" id="btn-user-menu" class="btn-user-menu" aria-expanded="false" aria-haspopup="true">
-        <span class="header-user-name">${escapeAttr(name)}</span>
-        <span class="user-menu-icon">▼</span>
-      </button>
-      <div id="user-dropdown" class="user-dropdown is-hidden">
-        <div class="user-dropdown__header">
-          <p class="user-dropdown__name">${escapeAttr(name)}</p>
-          <p class="user-dropdown__email">${escapeAttr(user.email || "")}</p>
-        </div>
-        <div class="user-dropdown__body">
-          <button type="button" id="btn-open-profile" class="user-dropdown__item">
-            <span>⚙️</span> Configuración de Perfil
-          </button>
-        </div>
-        <div class="user-dropdown__footer">
-          <button type="button" id="btn-logout" class="user-dropdown__item user-dropdown__item--danger">
-            <span>🚪</span> Cerrar sesión
-          </button>
-        </div>
-      </div>
-    </div>
-  `;
-
-  const btnMenu = document.getElementById("btn-user-menu");
-  const dropdown = document.getElementById("user-dropdown");
-
-  btnMenu?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    const isExpanded = btnMenu.getAttribute("aria-expanded") === "true";
-    btnMenu.setAttribute("aria-expanded", !isExpanded ? "true" : "false");
-    dropdown?.classList.toggle("is-hidden", isExpanded);
-  });
-
-  // Cerrar al hacer clic fuera
-  document.addEventListener("click", (e) => {
-    if (!el.contains(e.target)) {
-      btnMenu?.setAttribute("aria-expanded", "false");
-      dropdown?.classList.add("is-hidden");
-    }
-  });
-
-  document.getElementById("btn-logout")?.addEventListener("click", () => {
-    void logout();
-  });
-
-  document.getElementById("btn-open-profile")?.addEventListener("click", () => {
-    btnMenu?.setAttribute("aria-expanded", "false");
-    dropdown?.classList.add("is-hidden");
-    // Despachar evento personalizado para que ui-render lo capture
-    document.dispatchEvent(new CustomEvent("map:open-profile"));
-  });
-}
-
-function escapeAttr(text) {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/</g, "&lt;");
-}
+const PORTAL_ADMIN_HREF = "./apps/admin-console/index.html";
 
 /** @param {import("firebase/auth").User} user */
 function isGoogleUser(user) {
@@ -210,7 +301,7 @@ function profileFromGoogleUser(user) {
  */
 async function joinUserWebappsWithCatalog(userData) {
   const profile = normalizeUserDoc(userData);
-  const ids = profile.apps_activas;
+  const ids = profile.apps_activas.filter((appId) => !isDeprecatedWebappId(appId));
 
   if (ids.length === 0) {
     return { nombre: profile.nombre, tiles: [] };
@@ -220,25 +311,27 @@ async function joinUserWebappsWithCatalog(userData) {
     ids.map((appId) => getDoc(doc(db, "webapps", appId)))
   );
 
-  const tiles = ids.map((appId, i) => {
-    const snap = snaps[i];
-    if (!snap.exists()) {
-      return { appId, missing: true };
-    }
-    const d = snap.data();
-    return {
-      appId,
-      missing: false,
-      titulo:
-        typeof d.titulo === "string" && d.titulo.trim()
-          ? d.titulo.trim()
-          : appId,
-      url: typeof d.url === "string" ? d.url.trim() : "",
-      es_gratuita: Boolean(d.es_gratuita),
-      icono:
-        typeof d.icono === "string" ? d.icono.toLowerCase().trim() : "",
-    };
-  });
+  const tiles = ids
+    .map((appId, i) => {
+      const snap = snaps[i];
+      if (!snap.exists()) {
+        return { appId, missing: true };
+      }
+      const d = snap.data();
+      return {
+        appId,
+        missing: false,
+        titulo:
+          typeof d.titulo === "string" && d.titulo.trim()
+            ? d.titulo.trim()
+            : appId,
+        url: typeof d.url === "string" ? d.url.trim() : "",
+        es_gratuita: Boolean(d.es_gratuita),
+        icono:
+          typeof d.icono === "string" ? d.icono.toLowerCase().trim() : "",
+      };
+    })
+    .filter((tile) => !isDashboardWebappHidden(tile));
 
   return { nombre: profile.nombre, tiles };
 }
@@ -254,7 +347,10 @@ export function initAuthShell() {
     if (user) {
       document.body.dataset.shell = "app";
       setHomeAuthMessage({});
-      setHeaderUser(user);
+      mountUserHeaderMenu(user, {
+        isAdmin: false,
+        adminConsoleHref: PORTAL_ADMIN_HREF,
+      });
       try {
         const userRef = doc(db, "usuarios", user.uid);
         const userSnap = await getDoc(userRef);
@@ -262,12 +358,18 @@ export function initAuthShell() {
         const handlers = {
           onLinkGoogle: linkGoogleAccount,
           onLinkPassword: linkPasswordAccount,
+          onRequestGmailAccess: requestGmailAccess,
         };
 
         if (userSnap.exists()) {
           const profile = normalizeUserDoc(userSnap.data(), user.uid);
+          mountUserHeaderMenu(user, {
+            isAdmin: profile.rol === "admin",
+            adminConsoleHref: PORTAL_ADMIN_HREF,
+          });
           const view = await joinUserWebappsWithCatalog(userSnap.data());
-          renderDashboard(view, user, profile, handlers);
+          const gmailAccess = await safeGetGmailAccessState(user.uid);
+          renderDashboard(view, user, profile, handlers, gmailAccess);
         } else if (isGoogleUser(user) && user.email) {
           const nuevo = profileFromGoogleUser(user);
           await setDoc(userRef, nuevo);
@@ -281,6 +383,10 @@ export function initAuthShell() {
             },
             user.uid
           );
+          mountUserHeaderMenu(user, {
+            isAdmin: profile.rol === "admin",
+            adminConsoleHref: PORTAL_ADMIN_HREF,
+          });
           const view = await joinUserWebappsWithCatalog({
             ...nuevo,
             plan: {
@@ -288,7 +394,8 @@ export function initAuthShell() {
               fecha_inicio: new Date(),
             },
           });
-          renderDashboard(view, user, profile, handlers);
+          const gmailAccess = await safeGetGmailAccessState(user.uid);
+          renderDashboard(view, user, profile, handlers, gmailAccess);
         } else {
           mainContainer.innerHTML =
             '<div class="auth-error"><h2>Usuario no registrado</h2><p>No encontramos tu perfil en el sistema MAP. Regístrate con correo y contraseña o pide a un asesor que dé de alta tu cuenta.</p></div>';
@@ -299,7 +406,7 @@ export function initAuthShell() {
           '<div class="auth-error"><h2>No se pudo cargar tu perfil</h2><p>Revisa tu conexión o los permisos en Firestore.</p></div>';
       }
     } else {
-      setHeaderUser(null);
+      mountUserHeaderMenu(null);
       renderHomeAuth({
         onGoogle: loginWithGoogle,
         onLoginEmail: loginWithEmail,

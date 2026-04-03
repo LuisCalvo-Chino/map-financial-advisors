@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MAP Webinars Assistant</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=Montserrat:wght@400;600&family=Poppins:wght@300;400;600&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="../../brand.css" />
+  <link rel="stylesheet" href="./webinars-style.css" />
+</head>
+<body class="map-body map-webinars-body" data-shell="app" data-webinars-view="dashboard">
+  <header class="map-header">
+    <div class="logo">
+      <a href="../../index.html" class="map-logo-link" aria-label="MAP — Inicio">
+        <img src="../../img/MAP Logo.png" alt="MAP" class="map-logo-img" />
+      </a>
+    </div>
+    <nav id="nav-modules" class="map-nav-modules" aria-label="Módulos"></nav>
+    <div id="user-profile"></div>
+  </header>
+
+  <main class="main-container webinars-main">
+    <section id="webinars-access-guard" class="webinars-guard">
+      <h2>Verificando acceso al asistente</h2>
+      <p>Comprobando tu sesion y plan MAP antes de abrir el panel de webinars.</p>
+    </section>
+
+    <section id="webinars-dashboard" class="webinars-panel" hidden>
+      <div class="webinars-hero">
+        <div>
+          <p class="webinars-eyebrow">Dashboard</p>
+          <h1>MAP Financial Advisors</h1>
+          <p>
+            Central de formularios con envíos automáticos o manuales.
+          </p>
+        </div>
+        <button
+          type="button"
+          class="btn-map-secondary webinars-new-cta webinars-new-cta--prominent"
+          data-webinars-new
+          disabled
+          aria-disabled="true"
+          title="Esperando confirmación de sesión…"
+        >
+          + Nuevo formulario
+        </button>
+      </div>
+
+      <p id="webinars-new-status" class="webinars-dashboard-status" role="status" hidden></p>
+
+      <h2 class="webinars-dashboard-list-title">Formularios</h2>
+      <div id="webinars-dashboard-list" class="webinars-dashboard-list-mount"></div>
+    </section>
+  </main>
+
+  <script type="module" src="./logic-admin.js"></script>
+</body>
+</html>

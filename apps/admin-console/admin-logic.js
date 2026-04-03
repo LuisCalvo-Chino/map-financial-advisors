@@ -91,11 +91,18 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
-  state.currentAdmin = user;
-  renderSessionUser(user);
+  try {
+    await auth.authStateReady();
+  } catch (error) {
+    console.error("[MAP admin] authStateReady:", error);
+  }
+
+  const sessionUser = auth.currentUser ?? user;
+  state.currentAdmin = sessionUser;
+  renderSessionUser(sessionUser);
 
   try {
-    const adminSnap = await getDoc(doc(db, "usuarios", user.uid));
+    const adminSnap = await getDoc(doc(db, "usuarios", sessionUser.uid));
     if (!adminSnap.exists()) {
       renderGuard(`
         <h2>Acceso denegado</h2>
@@ -119,9 +126,23 @@ onAuthStateChanged(auth, async (user) => {
     await Promise.all([loadWebappsCatalog(), loadPage(0)]);
   } catch (error) {
     console.error("[MAP admin] auth bootstrap:", error);
+    const code =
+      error && typeof error === "object" && "code" in error
+        ? String(/** @type {{ code?: string }} */ (error).code || "")
+        : "";
+    const detail =
+      error && typeof error === "object" && "message" in error
+        ? String(/** @type {{ message?: string }} */ (error).message || "")
+        : "";
+    const hint =
+      code === "permission-denied"
+        ? "<p>Tu usuario debe tener <code>rol: \"admin\"</code> en <code>usuarios/{uid}</code> y las reglas publicadas deben permitir <code>list</code> sobre <code>usuarios</code> para administradores.</p>"
+        : "";
     renderGuard(`
       <h2>No se pudo cargar la consola</h2>
       <p>Revisa tus reglas de Firestore o la conexión con Firebase.</p>
+      ${hint}
+      <p><code>${escapeHtml(code || "sin-código")}</code> ${escapeHtml(detail || "")}</p>
     `);
   }
 });

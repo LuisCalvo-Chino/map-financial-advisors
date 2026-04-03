@@ -1,6 +1,7 @@
 {
   "scripts": {
     "dev": "vite",
+    "gmail-backend": "npm run dev --prefix backend",
     "build": "vite build",
     "preview": "vite preview",
     "deploy": "npm run build && gh-pages -d dist"

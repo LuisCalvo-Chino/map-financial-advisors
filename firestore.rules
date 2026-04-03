@@ -1,36 +1,52 @@
 rules_version = '2';
 service cloud.firestore {
-  function isSignedIn() {
-    return request.auth != null;
-  }
-
-  function isAdmin() {
-    return isSignedIn()
-      && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid))
-      && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'admin';
-  }
-
-  function validSignupDoc() {
-    return request.resource.data.keys().hasOnly([
-      'nombre',
-      'email',
-      'rol',
-      'status',
-      'plan',
-      'apps_activas'
-    ])
-      && request.resource.data.nombre is string
-      && request.resource.data.email is string
-      && request.resource.data.rol == 'usuario'
-      && request.resource.data.status == 'active'
-      && request.resource.data.apps_activas is list
-      && request.resource.data.plan is map
-      && request.resource.data.plan.tipo == 'free'
-      && request.resource.data.plan.fecha_inicio is timestamp
-      && request.resource.data.plan.fecha_vencimiento == null;
-  }
-
   match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid))
+        && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'admin';
+    }
+
+    // Dueño del webinar según el doc participante (rellenado por Cloud Function) o, si falta, get al padre.
+    function participantOwnedByCaller(webinarId) {
+      return isSignedIn()
+        && (
+          (
+            resource.data.keys().hasAny(['webinarCreatedByUid'])
+            && resource.data.webinarCreatedByUid == request.auth.uid
+          )
+          || (
+            !resource.data.keys().hasAny(['webinarCreatedByUid'])
+            && get(/databases/$(database)/documents/webinars/$(webinarId)).data.createdBy.uid
+              == request.auth.uid
+          )
+        );
+    }
+
+    function validSignupDoc() {
+      return request.resource.data.keys().hasOnly([
+        'nombre',
+        'email',
+        'rol',
+        'status',
+        'plan',
+        'apps_activas'
+      ])
+        && request.resource.data.nombre is string
+        && request.resource.data.email is string
+        && request.resource.data.rol == 'usuario'
+        && request.resource.data.status == 'active'
+        && request.resource.data.apps_activas is list
+        && request.resource.data.plan is map
+        && request.resource.data.plan.tipo == 'free'
+        && request.resource.data.plan.fecha_inicio is timestamp
+        && request.resource.data.plan.fecha_vencimiento == null;
+    }
+
     match /usuarios/{userId} {
       allow read: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
       allow list: if isAdmin();
@@ -39,11 +55,75 @@ service cloud.firestore {
         && validSignupDoc();
       allow update: if isAdmin();
       allow delete: if false;
+
+      // Documentos privados del usuario.
+      // El cliente solo puede leer el estado resumido `gmail_access`.
+      // Los tokens OAuth reales y sesiones temporales se escriben solo desde backend/admin SDK.
+      match /private/{privateDocId} {
+        allow read: if isAdmin()
+          || (
+            isSignedIn()
+            && request.auth.uid == userId
+            && privateDocId == 'gmail_access'
+          );
+        allow create, update: if false;
+        allow delete: if false;
+      }
     }
 
     match /webapps/{appId} {
       allow read: if isSignedIn();
       allow write: if false;
+    }
+
+    // -------------------------------------------------------------------------
+    // Colección webinars — formularios del asistente (builder / visor público).
+    // - Lectura: público si estado == published; si no, solo dueño o admin.
+    // - Alta: usuario autenticado, dueño en createdBy.uid, publicHex fijo 32 hex.
+    // - Actualización: admin sin límite; dueño no puede cambiar createdBy ni publicHex.
+    // -------------------------------------------------------------------------
+    match /webinars/{webinarId} {
+      allow read: if resource.data.estado == 'published'
+        || (isSignedIn() && resource.data.createdBy.uid == request.auth.uid)
+        || isAdmin();
+      allow create: if isSignedIn()
+        && request.resource.data.createdBy.uid == request.auth.uid
+        && request.resource.data.publicHex is string
+        && request.resource.data.publicHex.size() == 32;
+      allow update: if isAdmin()
+        || (
+          isSignedIn()
+          && resource.data.createdBy.uid == request.auth.uid
+          && request.resource.data.createdBy.uid == resource.data.createdBy.uid
+          && request.resource.data.publicHex == resource.data.publicHex
+        );
+      allow delete: if false;
+
+      // Subcolección participantes — respuestas del formulario público.
+      // - Lectura: solo admin o dueño del webinar padre.
+      // - Alta: sin login; solo si el webinar está publicado; campos acotados;
+      //   createdAt debe ser serverTimestamp() (coincide con request.time en la regla).
+      match /participantes/{participantId} {
+        allow read: if isAdmin() || participantOwnedByCaller(webinarId);
+        allow create: if get(/databases/$(database)/documents/webinars/$(webinarId)).data.estado
+            == 'published'
+          && request.resource.data.keys().hasOnly([
+            'email',
+            'answers',
+            'emailStatus',
+            'createdAt',
+          ])
+          && request.resource.data.email is string
+          && request.resource.data.answers is map
+          && request.resource.data.emailStatus is map
+          && request.resource.data.createdAt == request.time;
+        allow update: if false;
+        allow delete: if isAdmin() || participantOwnedByCaller(webinarId);
+      }
+    }
+
+    match /email_queue/{queueId} {
+      allow read, write: if false;
     }
   }
 }

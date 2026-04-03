@@ -3,6 +3,7 @@ import {
   canAccessWebapp,
   isPlanExpired,
 } from "../data/user-schema.js";
+import { isPortalAppUrl } from "../config/portal-webapps.js";
 
 const ICON_GLYPH = {
   users: "👥",
@@ -12,6 +13,7 @@ const ICON_GLYPH = {
   calculator: "🧮",
   chart: "📊",
   home: "🏠",
+  form: "📋",
   default: "◆",
 };
 
@@ -159,37 +161,31 @@ export function renderHomeAuth(handlers) {
  * }} view
  * @param {import("firebase/auth").User} user
  * @param {ReturnType<import("../data/user-schema.js").normalizeUserDoc>} userProfile
- * @param {{ onLinkGoogle: () => Promise<void>; onLinkPassword: (pwd: string) => Promise<void> }} handlers
+ * @param {{
+ *   onLinkGoogle: () => Promise<void>;
+ *   onLinkPassword: (pwd: string) => Promise<void>;
+ *   onRequestGmailAccess: () => Promise<void>;
+ * }} handlers
+ * @param {{ connected: boolean; email: string; providerLinked: boolean; scopes: string[] }} [gmailAccess]
  */
-export function renderDashboard(view, user, userProfile, handlers) {
+export function renderDashboard(view, user, userProfile, handlers, gmailAccess = {
+  connected: false,
+  email: "",
+  providerLinked: false,
+  scopes: [],
+}) {
   document.body.dataset.shell = "app";
 
   const container = document.getElementById("main-container");
   if (!container) return;
 
   const { nombre, tiles } = view;
-  const isAdmin = userProfile.rol === "admin";
 
   let gridHtml = "";
-  if (tiles.length === 0 && !isAdmin) {
+  if (tiles.length === 0) {
     gridHtml = `<p class="dashboard-empty">Aún no tienes aplicaciones asignadas. Contacta a tu asesor MAP.</p>`;
   } else {
-    const adminCard = isAdmin
-      ? `
-        <article class="webapp-card webapp-card--admin" role="listitem">
-          <div class="webapp-card__icon" aria-hidden="true">🗂</div>
-          <h3 class="webapp-card__title">Consola Admin</h3>
-          <p class="webapp-card__meta">apps/admin-console</p>
-          <a class="webapp-card__link" href="./apps/admin-console/index.html">
-            Abrir consola
-          </a>
-        </article>
-      `
-      : "";
-
-    gridHtml =
-      adminCard +
-      tiles
+    gridHtml = tiles
       .map((tile) => {
         if (tile.missing) {
           return `
@@ -205,17 +201,22 @@ export function renderDashboard(view, user, userProfile, handlers) {
           ICON_GLYPH[/** @type {keyof typeof ICON_GLYPH} */ (tile.icono)] ||
           ICON_GLYPH.default;
         const titleEl = escapeHtml(tile.titulo);
-        const linkHtml =
-          tile.url && /^https?:\/\//i.test(tile.url)
-            ? `<button class="webapp-card__link webapp-card__link-btn" type="button" data-app-id="${escapeAttr(tile.appId)}">Abrir aplicación</button>`
-            : `<span class="webapp-card__disabled">URL no configurada</span>`;
+        const canOpen = Boolean(tile.url && isPortalAppUrl(tile.url));
+        const cardClass = canOpen ? "webapp-card webapp-card--clickable" : "webapp-card";
+        const cardAttrs = canOpen
+          ? `role="listitem" tabindex="0" data-app-id="${escapeAttr(tile.appId)}" aria-label="Abrir ${escapeAttr(tile.titulo)}"`
+          : `role="listitem"`;
+
+        const footer = canOpen
+          ? `<span class="webapp-card__open-hint">Clic para abrir</span>`
+          : `<span class="webapp-card__disabled">URL no configurada</span>`;
 
         return `
-          <article class="webapp-card" role="listitem">
+          <article class="${cardClass}" ${cardAttrs}>
             <div class="webapp-card__icon" aria-hidden="true">${glyph}</div>
             <h3 class="webapp-card__title">${titleEl}</h3>
             <p class="webapp-card__meta">${escapeHtml(tile.appId)}</p>
-            ${linkHtml}
+            ${footer}
           </article>
         `;
       })
@@ -238,7 +239,7 @@ export function renderDashboard(view, user, userProfile, handlers) {
 
   // Escuchar el evento del menú de perfil para abrir el modal
   const openProfileHandler = () => {
-    renderProfileModal(user, userProfile, { hasGoogle, hasPassword }, handlers);
+    renderProfileModal(user, userProfile, { hasGoogle, hasPassword }, handlers, gmailAccess);
   };
   
   // Limpiar listeners anteriores para evitar duplicados si se re-renderiza
@@ -246,26 +247,42 @@ export function renderDashboard(view, user, userProfile, handlers) {
   window._mapProfileHandler = openProfileHandler;
   document.addEventListener("map:open-profile", window._mapProfileHandler);
 
-  container.querySelectorAll("[data-app-id]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const appId = /** @type {HTMLElement} */ (button).dataset.appId;
-      const tile = tiles.find((item) => !item.missing && item.appId === appId);
-      if (!tile || tile.missing || !tile.url) return;
+  function tryOpenApp(appId) {
+    const tile = tiles.find((item) => !item.missing && item.appId === appId);
+    if (!tile || tile.missing || !tile.url) return;
 
-      if (!canAccessWebapp(userProfile, tile)) {
-        renderAccessBlockedModal();
-        return;
-      }
+    if (!canAccessWebapp(userProfile, tile)) {
+      renderAccessBlockedModal();
+      return;
+    }
 
-      window.open(tile.url, "_blank", "noopener,noreferrer");
-    });
+    window.open(tile.url, "_blank", "noopener,noreferrer");
+  }
+
+  const appGrid = document.getElementById("app-grid");
+  appGrid?.addEventListener("click", (e) => {
+    const card = /** @type {HTMLElement} */ (e.target).closest("[data-app-id]");
+    if (!card?.dataset.appId) return;
+    tryOpenApp(card.dataset.appId);
+  });
+  appGrid?.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    const card = /** @type {HTMLElement} */ (e.target).closest("[data-app-id]");
+    if (!card?.dataset.appId) return;
+    e.preventDefault();
+    tryOpenApp(card.dataset.appId);
   });
 }
 
 /**
  * Renderiza el modal de configuración de perfil
  */
-export function renderProfileModal(user, userProfile, authState, handlers) {
+export function renderProfileModal(user, userProfile, authState, handlers, gmailAccess = {
+  connected: false,
+  email: "",
+  providerLinked: false,
+  scopes: [],
+}) {
   const { hasGoogle, hasPassword } = authState;
   const planLabel = PLAN_LABELS[userProfile.plan.tipo] ?? userProfile.plan.tipo;
   const accessState =
@@ -326,6 +343,36 @@ export function renderProfileModal(user, userProfile, authState, handlers) {
         </section>
 
         <section class="profile-section">
+          <h4 class="profile-section__title">Gmail Access</h4>
+          <p class="dashboard-hint" style="margin-bottom: 1rem;">
+            Autoriza a MAP para preparar el envío de correos desde tu cuenta de Google.
+          </p>
+          <div class="integration-card ${gmailAccess.connected ? "integration-card--ready" : "integration-card--warning"}">
+            <span class="integration-card__icon">✉️</span>
+            <span class="integration-card__name">Gmail Access</span>
+            <span class="integration-card__status">${
+              gmailAccess.connected ? "Configurado" : "Pendiente"
+            }</span>
+          </div>
+          <div class="profile-field">
+            <span class="profile-field__hint">
+              ${
+                gmailAccess.connected
+                  ? `Conectado con ${escapeHtml(gmailAccess.email || user.email || "tu cuenta")}.${
+                      gmailAccess.providerLinked ? " Google está vinculado." : ""
+                    }`
+                  : "Por favor configura Gmail en tu cuenta antes de intentar enviar correos."
+              }
+            </span>
+          </div>
+          <div>
+            <button type="button" id="btn-request-gmail-access" class="btn-map-primary">
+              ${gmailAccess.connected ? "Actualizar Gmail Access" : "Gmail Access"}
+            </button>
+          </div>
+        </section>
+
+        <section class="profile-section">
           <h4 class="profile-section__title">Integraciones (Próximamente)</h4>
           <p class="dashboard-hint" style="margin-bottom: 1rem;">Conecta tus herramientas externas.</p>
           <div class="integrations-grid">
@@ -339,23 +386,7 @@ export function renderProfileModal(user, userProfile, authState, handlers) {
               <span class="integration-card__name">Google Calendar</span>
               <span class="integration-card__status">Próximamente</span>
             </div>
-            <div class="integration-card">
-              <span class="integration-card__icon">🗂</span>
-              <span class="integration-card__name">Consola Admin</span>
-              <span class="integration-card__status">${
-                userProfile.rol === "admin" ? "Disponible" : "Solo admin"
-              }</span>
-            </div>
           </div>
-          ${
-            userProfile.rol === "admin"
-              ? `<div style="margin-top: 1rem;">
-                  <a class="btn-map-primary" href="./apps/admin-console/index.html" style="display: inline-flex; text-decoration: none;">
-                    Abrir Consola de Administrador
-                  </a>
-                </div>`
-              : ""
-          }
         </section>
       </div>
     </div>
@@ -395,6 +426,20 @@ export function renderProfileModal(user, userProfile, authState, handlers) {
       });
     });
   }
+
+  document.getElementById("btn-request-gmail-access")?.addEventListener("click", async () => {
+    try {
+      await handlers.onRequestGmailAccess();
+      renderStatusModal(
+        "Gmail Access configurado",
+        "Tu cuenta ya quedó autorizada para el envío de correos desde MAP. Si no ves el cambio de inmediato, recarga la página."
+      );
+      cleanup();
+      window.location.reload();
+    } catch (e) {
+      renderStatusModal("No se pudo configurar Gmail Access", errorMessage(e));
+    }
+  });
 }
 
 export function renderAccessBlockedModal() {

@@ -1,0 +1,13 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "webinars",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "createdBy.uid", "order": "ASCENDING" },
+        { "fieldPath": "publicHex", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

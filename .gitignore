@@ -2,6 +2,9 @@
 node_modules/
 dist/
 
+# Notas y documentación solo local (no subir a GitHub)
+local-dev/
+
 # Secretos y entorno local (nunca subir)
 .env
 .env.local
@@ -19,3 +22,4 @@ serviceAccount*.json
 # Sistema operativo
 .DS_Store
 Thumbs.db
+.vercel
