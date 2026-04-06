@@ -14,12 +14,12 @@
   <script type="module" crossorigin src="../../assets/ui-shell-CAP1PXY6.js"></script>
   <script type="module" crossorigin src="../../assets/gmail-backend-alEj_uZ5.js"></script>
   <script type="module" crossorigin src="../../assets/auth-handler-CBI4Htsr.js"></script>
-  <script type="module" crossorigin src="../../assets/webinars-header-szvqswje.js"></script>
+  <script type="module" crossorigin src="../../assets/webinars-header-DWqE7-f6.js"></script>
   <script type="module" crossorigin src="../../assets/preload-helper-Dp1pzeXC.js"></script>
-  <script type="module" crossorigin src="../../assets/webinar-form-ui-Dzy3ofTA.js"></script>
-  <script type="module" crossorigin src="../../assets/logic-admin-p_1jDkjT.js"></script>
+  <script type="module" crossorigin src="../../assets/webinar-form-ui-C64ON8gv.js"></script>
+  <script type="module" crossorigin src="../../assets/logic-admin-DCHpvYuB.js"></script>
   <link rel="stylesheet" crossorigin href="../../assets/brand-yQ7YVYfT.css">
-  <link rel="stylesheet" crossorigin href="../../assets/webinars-header-DnyLwFTV.css">
+  <link rel="stylesheet" crossorigin href="../../assets/webinars-header-nhz-q6fx.css">
 </head>
 <body class="map-body map-webinars-body" data-shell="app" data-webinars-view="builder">
   <header class="map-header">
@@ -198,7 +198,17 @@
               
               <!-- Para bloques de contenido -->
               <div class="webinars-form-field webinars-form-field--full" id="inspector-content-field" style="display: none;">
-                <label for="inspector-content">Contenido</label>
+                <label for="inspector-content-editable">Contenido</label>
+                <div id="inspector-rich-stack" class="webinars-rich-stack" hidden>
+                  <div id="inspector-rich-toolbar" class="webinars-rich-toolbar-host"></div>
+                  <div
+                    id="inspector-content-editable"
+                    class="webinars-rich-editor"
+                    role="textbox"
+                    contenteditable="true"
+                    aria-multiline="true"
+                  ></div>
+                </div>
                 <textarea id="inspector-content" rows="4" autocomplete="off"></textarea>
               </div>
               <div class="webinars-form-field webinars-form-field--full" id="inspector-list-type-field" style="display: none;">
@@ -245,20 +255,37 @@
                 <input
                   id="builder-logo-height"
                   type="range"
-                  min="100"
+                  min="80"
                   max="400"
                   step="1"
                   value="180"
-                  aria-valuemin="100"
+                  aria-valuemin="80"
                   aria-valuemax="400"
+                />
+                <input
+                  id="builder-logo-height-num"
+                  type="number"
+                  min="80"
+                  max="400"
+                  step="1"
+                  value="180"
+                  class="webinars-logo-height-num"
+                  aria-label="Alto del logo en píxeles"
                 />
                 <output id="builder-logo-height-value" class="webinars-logo-height-output" for="builder-logo-height">180</output>
               </div>
-              <p class="webinars-field-hint">Entre 100 y 400 px. El ancho se ajusta solo manteniendo la proporción.</p>
+              <p class="webinars-field-hint">Entre 80 y 400 px. El ancho se ajusta solo manteniendo la proporción.</p>
             </div>
             <div class="webinars-form-field webinars-form-field--full">
-              <label for="builder-footer-text">Texto del pie</label>
-              <input id="builder-footer-text" type="text" placeholder="Texto legal o marca" autocomplete="off" />
+              <label for="builder-footer-editable">Pie de página</label>
+              <div id="builder-footer-rich-toolbar" class="webinars-rich-toolbar-host"></div>
+              <div
+                id="builder-footer-editable"
+                class="webinars-rich-editor webinars-rich-editor--footer"
+                role="textbox"
+                contenteditable="true"
+                aria-multiline="true"
+              ></div>
             </div>
             <div class="webinars-form-field">
               <label for="builder-header-color">Cabecera</label>
