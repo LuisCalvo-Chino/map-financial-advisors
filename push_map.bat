@@ -1,5 +1,7 @@
 @echo off
 chcp 65001 >nul
+REM Remoto: https://github.com/LuisCalvo-Chino/map-financial-advisors.git
+REM Rama en GitHub: MAP-FinancialAdvisors (mismo repo; el codigo del sitio esta en esa rama)
 echo === MAP CLOUD PUSH SYSTEM ===
 REM Uso: push_map.bat "mensaje del commit"  (recomendado en terminales sin entrada interactiva)
 REM      push_map.bat                         (pide el mensaje al vuelo)
