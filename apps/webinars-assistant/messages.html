@@ -170,8 +170,23 @@
               <h4 class="builder-inspector-title">Opciones del bloque</h4>
               <div class="webinars-form-grid webinars-form-grid--compact">
                 <div class="webinars-form-field webinars-form-field--full" id="msg-block-content-field">
-                  <label for="msg-block-content" id="msg-block-content-label">Contenido</label>
-                  <textarea id="msg-block-content" rows="4" autocomplete="off" style="resize: vertical; width: 100%; box-sizing: border-box;"></textarea>
+                  <label for="msg-block-content-editable" id="msg-block-content-label">Contenido</label>
+                  <div id="msg-block-rich-stack" class="webinars-rich-stack" hidden>
+                    <div id="msg-block-rich-toolbar" class="webinars-rich-toolbar-host"></div>
+                    <div
+                      id="msg-block-content-editable"
+                      class="webinars-rich-editor"
+                      role="textbox"
+                      contenteditable="true"
+                      aria-multiline="true"
+                    ></div>
+                  </div>
+                  <textarea
+                    id="msg-block-content"
+                    rows="4"
+                    autocomplete="off"
+                    style="resize: vertical; width: 100%; box-sizing: border-box;"
+                  ></textarea>
                 </div>
                 <div class="webinars-form-field webinars-form-field--full" id="msg-block-list-type-field" style="display: none;">
                   <label for="msg-block-list-type">Tipo de Lista</label>
@@ -263,16 +278,38 @@
                 <input
                   id="msg-logo-height"
                   type="range"
-                  min="40"
-                  max="200"
+                  min="80"
+                  max="400"
                   step="1"
                   value="80"
-                  aria-valuemin="40"
-                  aria-valuemax="200"
+                  aria-valuemin="80"
+                  aria-valuemax="400"
+                />
+                <input
+                  id="msg-logo-height-num"
+                  type="number"
+                  min="80"
+                  max="400"
+                  step="1"
+                  value="80"
+                  class="webinars-logo-height-num"
+                  aria-label="Alto del logo en píxeles"
                 />
                 <output id="msg-logo-height-value" class="webinars-logo-height-output" for="msg-logo-height">80</output>
               </div>
-              <p class="webinars-field-hint">Entre 40 y 200 px. El ancho se ajusta solo manteniendo la proporción.</p>
+              <p class="webinars-field-hint">Entre 80 y 400 px. El ancho se ajusta solo manteniendo la proporción.</p>
+            </div>
+            <div class="webinars-form-field webinars-form-field--full">
+              <label for="msg-footer-editable">Pie de página del correo</label>
+              <div id="msg-footer-rich-toolbar" class="webinars-rich-toolbar-host"></div>
+              <div
+                id="msg-footer-editable"
+                class="webinars-rich-editor webinars-rich-editor--footer"
+                role="textbox"
+                contenteditable="true"
+                aria-multiline="true"
+              ></div>
+              <p class="webinars-field-hint">Se guarda en el formulario al pulsar Guardar. Mismo pie que verán los inscritos si no lo cambias en el builder.</p>
             </div>
             <div class="webinars-form-field">
               <label for="msg-header-color">Cabecera</label>
@@ -311,8 +348,21 @@
       </div>
 
       <aside class="webinars-builder-preview-column" aria-label="Vista previa del correo">
-        <p class="webinars-eyebrow">Vista previa</p>
-        <h2 class="webinars-preview-column-title">Así verá el usuario el mensaje</h2>
+        <div class="webinars-preview-column-head">
+          <div class="webinars-preview-column-head-text">
+            <p class="webinars-eyebrow">Vista previa</p>
+            <h2 class="webinars-preview-column-title">Así verá el usuario el mensaje</h2>
+          </div>
+          <button
+            type="button"
+            id="btn-msg-download-preview-html"
+            class="btn-map-secondary btn-map-secondary--small webinars-preview-download-btn"
+            aria-label="Descargar HTML de la vista previa del mensaje"
+          >
+            Descargar HTML
+          </button>
+        </div>
+        <p id="msg-preview-subject-line" class="webinars-preview-subject" aria-live="polite"></p>
         <div id="msg-final-preview-root" class="builder-final-preview-root"></div>
       </aside>
     </section>

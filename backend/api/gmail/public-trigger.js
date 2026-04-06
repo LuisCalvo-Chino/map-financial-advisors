@@ -1,8 +1,15 @@
+import { optionalEnv } from "../_lib/config.js";
 import { enqueueParticipantEmails, processQueuedEmails } from "../_lib/queue.js";
 import { sendGmailMessage } from "../_lib/gmail.js";
 import { handleOptions, parseJsonBody, sendJson, setCors } from "../_lib/http.js";
 import { readUserTokens, upsertGmailTokens } from "../_lib/tokens.js";
 import { getAdminDb } from "../_lib/firebase-admin.js";
+
+/** Debe coincidir con la URI registrada en Google Cloud y con la usada al conectar Gmail (p. ej. GitHub Pages). */
+const GMAIL_REFRESH_REDIRECT_URI = optionalEnv(
+  "GMAIL_OAUTH_REDIRECT_URI",
+  "http://localhost:5173/gmail-oauth-callback.html"
+);
 
 export default async function handler(req, res) {
   if (handleOptions(req, res)) return;
@@ -49,7 +56,7 @@ export default async function handler(req, res) {
     // Procesar la cola
     const sentResults = await processQueuedEmails(adminUid, {
       limit: 5,
-      redirectUri: "http://localhost:5173/gmail-oauth-callback.html", // Dummy redirect URI para refresh token
+      redirectUri: GMAIL_REFRESH_REDIRECT_URI,
       sendMessage: async ({ targetEmail, subject, html, redirectUri: localRedirectUri }) => {
         const result = await sendGmailMessage({
           refreshToken,

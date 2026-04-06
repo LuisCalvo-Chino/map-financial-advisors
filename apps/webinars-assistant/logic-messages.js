@@ -17,6 +17,14 @@ import {
   setWebinarsHeaderLoading,
   setWebinarsLoggedOutHeader,
 } from "./webinars-header.js";
+import {
+  bindRichEditorInput,
+  bindRichToolbar,
+  emailSanitizedBlock,
+  htmlFromPlainOrSanitized,
+  sanitizeWebinarHtml,
+  stripHtmlToPlain,
+} from "./rich-text-toolbar.js";
 
 let currentWebinarId = null;
 let currentWebinarDoc = null;
@@ -27,6 +35,32 @@ let currentTemplateData = null;
 let selectedCtaId = null;
 /** Evita resetear el inspector en cada tecla cuando el bloque seleccionado no cambia. */
 let lastMsgInspectorBlockId = null;
+
+const LOGO_HEIGHT_MIN = 80;
+const LOGO_HEIGHT_MAX = 400;
+
+/**
+ * @param {unknown} value
+ */
+function clampMsgLogoHeightPx(value) {
+  const n = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(n)) return 80;
+  return Math.min(LOGO_HEIGHT_MAX, Math.max(LOGO_HEIGHT_MIN, Math.round(n)));
+}
+
+/**
+ * @param {number} v
+ */
+function syncMsgLogoHeightControls(v) {
+  const range = document.getElementById("msg-logo-height");
+  const num = document.getElementById("msg-logo-height-num");
+  const out = document.getElementById("msg-logo-height-value");
+  const clamped = clampMsgLogoHeightPx(v);
+  if (range) range.value = String(clamped);
+  if (num) num.value = String(clamped);
+  if (out) out.textContent = String(clamped);
+  return clamped;
+}
 
 const CTA_BLOCK_TYPES = new Set([
   "zoom",
@@ -326,9 +360,23 @@ function loadTemplate(templateId) {
 
   els.logoUrl.value = currentTemplateData.design?.logoUrl || "";
   
-  const lh = currentTemplateData.design?.logoHeight || currentWebinarDoc.branding?.logoHeight || 80;
-  els.logoHeight.value = lh;
-  els.logoHeightOut.textContent = lh;
+  const lh = clampMsgLogoHeightPx(
+    currentTemplateData.design?.logoHeight ||
+      currentWebinarDoc.branding?.logoHeight ||
+      currentWebinarDoc.branding?.logoMaxHeightPx ||
+      80
+  );
+  syncMsgLogoHeightControls(lh);
+
+  const footerEd = document.getElementById("msg-footer-editable");
+  if (footerEd && currentWebinarDoc?.branding) {
+    const b = /** @type {Record<string, unknown>} */ (currentWebinarDoc.branding);
+    const fh = String(b.footerHtml || "").trim();
+    const ft = String(b.footerText || "").trim();
+    footerEd.innerHTML = fh
+      ? sanitizeWebinarHtml(fh)
+      : htmlFromPlainOrSanitized(ft || "© MAP");
+  }
 
   els.headerColor.value = currentTemplateData.design?.headerColor || "#173862";
   els.footerColor.value = currentTemplateData.design?.footerColor || "#102742";
@@ -367,9 +415,27 @@ function readFormIntoTemplate() {
   currentTemplateData.mode =
     currentTemplateData.sendFormat === "manual" ? "manual" : "automatic";
 
+  const logoRange = document.getElementById("msg-logo-height");
+  const logoNum = document.getElementById("msg-logo-height-num");
+  const logoSrc =
+    logoNum && document.activeElement === logoNum ? logoNum.value : logoRange?.value;
+  const logoH = clampMsgLogoHeightPx(logoSrc);
+
+  const footerEd = document.getElementById("msg-footer-editable");
+  if (footerEd && currentWebinarDoc) {
+    const html = sanitizeWebinarHtml(footerEd.innerHTML);
+    if (!currentWebinarDoc.branding) currentWebinarDoc.branding = {};
+    /** @type {Record<string, unknown>} */
+    const br = currentWebinarDoc.branding;
+    br.footerHtml = html;
+    const tmp = document.createElement("div");
+    tmp.innerHTML = html;
+    br.footerText = (tmp.textContent || "").trim() || "© MAP";
+  }
+
   currentTemplateData.design = {
     logoUrl: els.logoUrl.value,
-    logoHeight: Number(els.logoHeight.value) || 80,
+    logoHeight: logoH,
     headerColor: els.headerColor.value,
     footerColor: els.footerColor.value,
     backgroundColor: els.bgColor.value,
@@ -419,17 +485,32 @@ function fillMsgBlockInspectorForm(block) {
   els.blockZoomFields.style.display = "none";
   if (els.blockCtaWrap) els.blockCtaWrap.style.display = "none";
 
+  const richStack = document.getElementById("msg-block-rich-stack");
+  const ed = document.getElementById("msg-block-content-editable");
+  const ta = els.blockContent;
+
   if (["title", "text", "list"].includes(block.type)) {
     els.blockContentField.style.display = "block";
-    els.blockContentLabel.textContent =
-      block.type === "title" ? "Texto del título" : "Contenido";
-    els.blockContent.value = block.content || "";
 
     if (block.type === "list") {
+      if (richStack) richStack.hidden = true;
+      if (ta) {
+        ta.style.display = "block";
+        ta.value = block.content || "";
+      }
+      els.blockContentLabel.textContent = "Contenido";
       els.blockListTypeField.style.display = "block";
       els.blockListType.value = block.listType || "bullets";
+    } else {
+      if (richStack) richStack.hidden = false;
+      if (ta) ta.style.display = "none";
+      els.blockContentLabel.textContent =
+        block.type === "title" ? "Texto del título" : "Contenido";
+      if (ed) ed.innerHTML = htmlFromPlainOrSanitized(block.content || "");
     }
   } else {
+    if (richStack) richStack.hidden = true;
+    if (ta) ta.style.display = "block";
     els.blockContentField.style.display = "block";
     els.blockContentLabel.textContent = "Texto del botón";
     els.blockContent.value = block.content || "";
@@ -494,7 +575,7 @@ function renderBlockList() {
 
   els.blockList.innerHTML = currentTemplateData.blocks
     .map((block) => {
-      let label = block.content || "Sin texto";
+      let label = stripHtmlToPlain(block.content || "") || "Sin texto";
       if (label.length > 30) label = label.substring(0, 30) + "...";
       const selRow =
         selectedCtaId === block.id ? " builder-field-row--selected" : "";
@@ -543,9 +624,15 @@ function buildEmailHtmlString() {
   if (currentTemplateData.blocks && currentTemplateData.blocks.length > 0) {
     blocksHtml = currentTemplateData.blocks.map(block => {
       if (block.type === 'title') {
-        return `<h3 style="color: ${d.titleColor || '#FFFFFF'}; font-family: 'Montserrat', 'Trebuchet MS', Arial, sans-serif; font-weight: 700; margin-top: 25px; margin-bottom: 15px;">${escapeHtml(block.content || 'Nuevo Título')}</h3>`;
+        return emailSanitizedBlock(
+          block.content || "Nuevo Título",
+          `color: ${d.titleColor || "#FFFFFF"}; font-family: 'Montserrat', 'Trebuchet MS', Arial, sans-serif; font-weight: 700; font-size: 1.25rem; margin-top: 25px; margin-bottom: 15px;`
+        );
       } else if (block.type === 'text') {
-        return `<div style="color: ${d.textColor || '#F4F0ED'}; font-family: 'Poppins', Arial, sans-serif; font-size: 16px; line-height: 1.6; white-space: pre-wrap; margin-bottom: 15px;">${escapeHtml(block.content || 'Texto del párrafo...')}</div>`;
+        return emailSanitizedBlock(
+          block.content || "Texto del párrafo...",
+          `color: ${d.textColor || "#F4F0ED"}; font-family: 'Poppins', Arial, sans-serif; font-size: 16px; line-height: 1.6; margin-bottom: 15px;`
+        );
       } else if (block.type === 'list') {
         const items = (block.content || '').split('\n').filter(line => line.trim() !== '');
         const listTag = block.listType === 'numbers' ? 'ol' : 'ul';
@@ -629,7 +716,15 @@ function buildEmailHtmlString() {
     }).join("");
   }
 
-  const logoHeight = d.logoHeight || currentWebinarDoc.branding?.logoHeight || 80;
+  const logoHeight = clampMsgLogoHeightPx(
+    d.logoHeight || currentWebinarDoc.branding?.logoHeight || currentWebinarDoc.branding?.logoMaxHeightPx || 80
+  );
+
+  const br = /** @type {Record<string, unknown>} */ (currentWebinarDoc.branding || {});
+  const footerHtmlRaw = String(br.footerHtml || "").trim();
+  const footerInner = footerHtmlRaw
+    ? sanitizeWebinarHtml(footerHtmlRaw)
+    : `<span style="white-space: pre-wrap;">${escapeHtml(String(br.footerText || "© MAP"))}</span>`;
 
   return `
     <div style="background-color: ${d.backgroundColor}; padding: 20px; font-family: 'Poppins', 'Helvetica Neue', Helvetica, Arial, sans-serif;">
@@ -638,11 +733,10 @@ function buildEmailHtmlString() {
           <img src="${logo}" alt="Logo" style="max-height: ${logoHeight}px; max-width: 100%; display: block; margin: 0 auto;">
         </div>
         <div style="padding: 40px 30px; color: #333;">
-          <h2 style="margin-top: 0; font-family: 'Montserrat', Arial, sans-serif; font-weight: 700; color: ${d.titleColor || '#FFFFFF'};">${escapeHtml(currentTemplateData.subject || 'Asunto del correo')}</h2>
           ${blocksHtml}
         </div>
         <div style="background-color: ${d.footerColor}; padding: 30px; text-align: center; color: #fff; font-size: 14px; border-top: 1px solid ${d.footerColor};">
-          ${escapeHtml(currentWebinarDoc.branding?.footerText || '© MAP')}
+          ${footerInner}
         </div>
       </div>
     </div>
@@ -652,6 +746,13 @@ function buildEmailHtmlString() {
 function updatePreview() {
   readFormIntoTemplate();
   els.previewRoot.innerHTML = buildEmailHtmlString();
+  const subjLine = document.getElementById("msg-preview-subject-line");
+  if (subjLine) {
+    const s = String(currentTemplateData.subject || "").trim();
+    subjLine.textContent = s
+      ? `Asunto del correo (solo en la bandeja de entrada, no dentro del mensaje): ${s}`
+      : "";
+  }
 }
 
 async function saveChanges() {
@@ -675,8 +776,13 @@ async function saveChanges() {
   };
 
   try {
+    const prevBr =
+      currentWebinarDoc.branding && typeof currentWebinarDoc.branding === "object"
+        ? currentWebinarDoc.branding
+        : {};
     await updateDoc(doc(db, "webinars", currentWebinarId), {
       messaging: messagingClean,
+      branding: { ...prevBr },
       updatedAt: serverTimestamp(),
     });
     currentWebinarDoc.messaging = messagingClean;
@@ -703,12 +809,13 @@ function bindEvents() {
     });
   });
 
+  const logoNum = document.getElementById("msg-logo-height-num");
   const inputs = [
     els.msgName,
     els.enabled,
     els.subject,
     els.logoUrl,
-    els.logoHeight,
+    logoNum,
     els.headerColor,
     els.footerColor,
     els.bgColor,
@@ -724,13 +831,48 @@ function bindEvents() {
       input.addEventListener("change", updatePreview);
     }
   });
-  
-  els.logoHeight?.addEventListener("input", (e) => {
-    els.logoHeightOut.textContent = e.target.value;
+
+  const syncMsgLogoFromControls = () => {
+    const range = document.getElementById("msg-logo-height");
+    const num = document.getElementById("msg-logo-height-num");
+    const raw = num && document.activeElement === num ? num.value : range?.value;
+    syncMsgLogoHeightControls(clampMsgLogoHeightPx(raw));
     updatePreview();
-  });
+  };
+  els.logoHeight?.addEventListener("input", syncMsgLogoFromControls);
+  logoNum?.addEventListener("input", syncMsgLogoFromControls);
+  logoNum?.addEventListener("change", syncMsgLogoFromControls);
 
   document.getElementById("btn-msg-save-changes").addEventListener("click", saveChanges);
+
+  document.getElementById("btn-msg-download-preview-html")?.addEventListener("click", () => {
+    readFormIntoTemplate();
+    const bodyHtml = buildEmailHtmlString();
+    const rawName =
+      String(currentTemplateData?.name || currentTemplateId || "mensaje").trim() || "mensaje";
+    const nameSafe = rawName.replace(/[^\w\u00C0-\u024F-]+/g, "_").replace(/_+/g, "_").slice(0, 80);
+    const doc = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vista previa — ${escapeHtml(rawName)}</title>
+</head>
+<body style="margin:0;background:#1a1a1a;">
+${bodyHtml}
+</body>
+</html>`;
+    const blob = new Blob([doc], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `vista-previa-${nameSafe || "mensaje"}.html`;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  });
 
   document.getElementById("btn-msg-add-block").addEventListener("click", () => {
     const type = document.getElementById("msg-new-block-type").value;
@@ -806,14 +948,13 @@ function bindEvents() {
   
   els.blockContent.addEventListener("input", (e) => {
     if (selectedCtaId) {
-      const block = currentTemplateData.blocks.find(c => c.id === selectedCtaId);
-      if (block) {
+      const block = currentTemplateData.blocks.find((c) => c.id === selectedCtaId);
+      if (block && block.type === "list") {
         block.content = e.target.value;
-        
-        // Update label in the list without re-rendering the whole list
-        const safeId = typeof CSS !== "undefined" && typeof CSS.escape === "function"
-          ? CSS.escape(selectedCtaId)
-          : String(selectedCtaId).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+        const safeId =
+          typeof CSS !== "undefined" && typeof CSS.escape === "function"
+            ? CSS.escape(selectedCtaId)
+            : String(selectedCtaId).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
         const itemLabel = document.querySelector(
           `li.builder-field-item.msg-block-item[data-block-id="${safeId}"] .builder-field-row__label`
         );
@@ -822,11 +963,60 @@ function bindEvents() {
           if (label.length > 30) label = label.substring(0, 30) + "...";
           itemLabel.textContent = label;
         }
-        
         updatePreview();
       }
     }
   });
+
+  const msgBlockEd = document.getElementById("msg-block-content-editable");
+  const msgBlockTb = document.getElementById("msg-block-rich-toolbar");
+  if (msgBlockTb && msgBlockEd && msgBlockTb.dataset.mapRichBound !== "1") {
+    msgBlockTb.dataset.mapRichBound = "1";
+    const updateMsgBlockRowLabel = () => {
+      if (!selectedCtaId) return;
+      const block = currentTemplateData.blocks.find((c) => c.id === selectedCtaId);
+      if (!block) return;
+      const safeId =
+        typeof CSS !== "undefined" && typeof CSS.escape === "function"
+          ? CSS.escape(selectedCtaId)
+          : String(selectedCtaId).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+      const itemLabel = document.querySelector(
+        `li.builder-field-item.msg-block-item[data-block-id="${safeId}"] .builder-field-row__label`
+      );
+      if (itemLabel) {
+        let label = stripHtmlToPlain(block.content || "") || "Sin texto";
+        if (label.length > 30) label = label.substring(0, 30) + "...";
+        itemLabel.textContent = label;
+      }
+    };
+    const syncMsgBlockRichFromEditor = () => {
+      if (!selectedCtaId) return;
+      const block = currentTemplateData.blocks.find((c) => c.id === selectedCtaId);
+      if (!block || !["title", "text"].includes(block.type)) return;
+      block.content = sanitizeWebinarHtml(msgBlockEd.innerHTML);
+      updateMsgBlockRowLabel();
+      updatePreview();
+    };
+    bindRichToolbar(msgBlockTb, msgBlockEd, { onChange: syncMsgBlockRichFromEditor });
+    bindRichEditorInput(msgBlockEd, {
+      onInput: (html) => {
+        if (!selectedCtaId) return;
+        const block = currentTemplateData.blocks.find((c) => c.id === selectedCtaId);
+        if (!block || !["title", "text"].includes(block.type)) return;
+        block.content = html;
+        updateMsgBlockRowLabel();
+        updatePreview();
+      },
+    });
+  }
+
+  const msgFootEd = document.getElementById("msg-footer-editable");
+  const msgFootTb = document.getElementById("msg-footer-rich-toolbar");
+  if (msgFootTb && msgFootEd && msgFootTb.dataset.mapRichBound !== "1") {
+    msgFootTb.dataset.mapRichBound = "1";
+    bindRichToolbar(msgFootTb, msgFootEd, { onChange: () => updatePreview() });
+    bindRichEditorInput(msgFootEd, { onInput: () => updatePreview() });
+  }
   
   els.blockListType.addEventListener("change", (e) => {
     if (selectedCtaId) {

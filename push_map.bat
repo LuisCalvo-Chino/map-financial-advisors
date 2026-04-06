@@ -1,14 +1,21 @@
 @echo off
 chcp 65001 >nul
 echo === MAP CLOUD PUSH SYSTEM ===
-set /p msg="Introduce el mensaje del cambio: "
-if "%msg%"=="" (
+REM Uso: push_map.bat "mensaje del commit"  (recomendado en terminales sin entrada interactiva)
+REM      push_map.bat                         (pide el mensaje al vuelo)
+if not "%~1"=="" (
+  set "MAP_COMMIT_MSG=%~1"
+  goto :commit_push
+)
+set /p MAP_COMMIT_MSG="Introduce el mensaje del cambio: "
+:commit_push
+if "%MAP_COMMIT_MSG%"=="" (
   echo Error: el mensaje no puede estar vacío.
   pause
   exit /b 1
 )
 git add .
-git commit -m "%msg%"
+git commit -m "%MAP_COMMIT_MSG%"
 if errorlevel 1 (
   echo.
   echo No se pudo crear el commit ^(sin cambios o error^). Revisa el mensaje anterior.

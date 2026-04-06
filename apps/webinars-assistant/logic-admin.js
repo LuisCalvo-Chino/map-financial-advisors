@@ -19,6 +19,13 @@ import {
   normalizeWebinarDocFromFirestore,
   renderWebinarFormShell,
 } from "./webinar-form-ui.js";
+import {
+  bindRichEditorInput,
+  bindRichToolbar,
+  htmlFromPlainOrSanitized,
+  sanitizeWebinarHtml,
+  stripHtmlToPlain,
+} from "./rich-text-toolbar.js";
 import { sendPendingEmails } from "./email-engine.js";
 import {
   clearWebinarsUserHeader,
@@ -69,6 +76,7 @@ const DEFAULT_BRANDING = {
   title: "Nuevo webinar MAP",
   subtitle: "Disena una experiencia de registro profesional y alineada con la marca.",
   footerText: "MAP - Gestion profesional de registros y comunicaciones.",
+  footerHtml: "",
 };
 
 /**
@@ -707,7 +715,7 @@ function populateBuilderFormFromDraft() {
   const subEl = document.getElementById("builder-subtitle");
   const stateEl = document.getElementById("builder-state");
   const logoEl = document.getElementById("builder-logo-url");
-  const footerTextEl = document.getElementById("builder-footer-text");
+  const footerEd = document.getElementById("builder-footer-editable");
   const h = document.getElementById("builder-header-color");
   const f = document.getElementById("builder-footer-color");
   const bg = document.getElementById("builder-background-color");
@@ -724,14 +732,14 @@ function populateBuilderFormFromDraft() {
   if (subEl) subEl.value = builderDraft.branding.subtitle || "";
   if (stateEl) stateEl.value = builderDraft.estado;
   if (logoEl) logoEl.value = builderDraft.branding.logoUrl || "";
-  const logoHeightEl = document.getElementById("builder-logo-height");
-  const logoHeightOut = document.getElementById("builder-logo-height-value");
-  if (logoHeightEl) {
-    const v = clampLogoHeightPx(builderDraft.branding.logoMaxHeightPx);
-    logoHeightEl.value = String(v);
-    if (logoHeightOut) logoHeightOut.textContent = String(v);
+  syncBuilderLogoHeightControls(builderDraft.branding.logoMaxHeightPx);
+  if (footerEd) {
+    const fh = String(builderDraft.branding.footerHtml || "").trim();
+    const ft = String(builderDraft.branding.footerText || "").trim();
+    footerEd.innerHTML = fh
+      ? sanitizeWebinarHtml(fh)
+      : htmlFromPlainOrSanitized(ft || "MAP");
   }
-  if (footerTextEl) footerTextEl.value = builderDraft.branding.footerText || "";
   if (h) h.value = normalizeHexColor(builderDraft.branding.headerColor, "#173862");
   if (f) f.value = normalizeHexColor(builderDraft.branding.footerColor, "#102742");
   if (bg) bg.value = normalizeHexColor(builderDraft.branding.backgroundColor, "#f4f0ed");
@@ -775,7 +783,7 @@ function readBuilderFormIntoDraft() {
   const subEl = document.getElementById("builder-subtitle");
   const stateEl = document.getElementById("builder-state");
   const logoEl = document.getElementById("builder-logo-url");
-  const footerTextEl = document.getElementById("builder-footer-text");
+  const footerEd = document.getElementById("builder-footer-editable");
   const h = document.getElementById("builder-header-color");
   const f = document.getElementById("builder-footer-color");
   const bg = document.getElementById("builder-background-color");
@@ -795,14 +803,21 @@ function readBuilderFormIntoDraft() {
   }
   if (logoEl) builderDraft.branding.logoUrl = logoEl.value.trim();
   const logoHeightEl = document.getElementById("builder-logo-height");
-  const logoHeightOut = document.getElementById("builder-logo-height-value");
-  if (logoHeightEl) {
-    const v = clampLogoHeightPx(logoHeightEl.value);
-    builderDraft.branding.logoMaxHeightPx = v;
-    logoHeightEl.value = String(v);
-    if (logoHeightOut) logoHeightOut.textContent = String(v);
+  const logoNumEl = document.getElementById("builder-logo-height-num");
+  const src =
+    logoNumEl && document.activeElement === logoNumEl
+      ? logoNumEl.value
+      : logoHeightEl?.value;
+  const v = clampLogoHeightPx(src);
+  builderDraft.branding.logoMaxHeightPx = v;
+  syncBuilderLogoHeightControls(v);
+  if (footerEd) {
+    const html = sanitizeWebinarHtml(footerEd.innerHTML);
+    builderDraft.branding.footerHtml = html;
+    const tmp = document.createElement("div");
+    tmp.innerHTML = html;
+    builderDraft.branding.footerText = (tmp.textContent || "").trim() || "MAP";
   }
-  if (footerTextEl) builderDraft.branding.footerText = footerTextEl.value.trim();
   if (h) builderDraft.branding.headerColor = h.value;
   if (f) builderDraft.branding.footerColor = f.value;
   if (bg) builderDraft.branding.backgroundColor = bg.value;
@@ -828,7 +843,21 @@ function readBuilderFormIntoDraft() {
 function clampLogoHeightPx(value) {
   const n = typeof value === "number" ? value : Number(value);
   if (!Number.isFinite(n)) return 180;
-  return Math.min(400, Math.max(100, Math.round(n)));
+  return Math.min(400, Math.max(80, Math.round(n)));
+}
+
+/**
+ * @param {number} v
+ */
+function syncBuilderLogoHeightControls(v) {
+  const range = document.getElementById("builder-logo-height");
+  const num = document.getElementById("builder-logo-height-num");
+  const out = document.getElementById("builder-logo-height-value");
+  const clamped = clampLogoHeightPx(v);
+  if (range) range.value = String(clamped);
+  if (num) num.value = String(clamped);
+  if (out) out.textContent = String(clamped);
+  return clamped;
 }
 
 /**
@@ -1409,13 +1438,23 @@ function syncFieldInspectorFromDraft() {
 
     if (isContentBlock) {
       if (cField) cField.style.display = "block";
-      const c = document.getElementById("inspector-content");
-      if (c) c.value = field.content || "";
-      
-      if (field.type === "list" && tField) {
-        tField.style.display = "block";
+      const richStack = document.getElementById("inspector-rich-stack");
+      const ed = document.getElementById("inspector-content-editable");
+      const ta = document.getElementById("inspector-content");
+      if (field.type === "list") {
+        if (richStack) richStack.hidden = true;
+        if (ta) {
+          ta.style.display = "block";
+          ta.value = field.content || "";
+        }
+        if (tField) tField.style.display = "block";
         const t = document.getElementById("inspector-list-type");
         if (t) t.value = field.listType || "bullets";
+      } else {
+        if (tField) tField.style.display = "none";
+        if (richStack) richStack.hidden = false;
+        if (ta) ta.style.display = "none";
+        if (ed) ed.innerHTML = htmlFromPlainOrSanitized(field.content || "");
       }
     } else {
       if (lField) lField.style.display = "block";
@@ -1431,6 +1470,30 @@ function syncFieldInspectorFromDraft() {
     }
   }
   attachBuilderFieldInspectorUnderSelectedRow();
+}
+
+/**
+ * Actualiza solo el texto de la fila del campo seleccionado (evita innerHTML en cada tecla).
+ * @param {string} fieldId
+ */
+function updateBuilderFieldRowLabel(fieldId) {
+  if (!fieldId || !builderDraft) return;
+  const field = builderDraft.fields.find((f) => f.id === fieldId);
+  if (!field) return;
+  const safeId =
+    typeof CSS !== "undefined" && typeof CSS.escape === "function"
+      ? CSS.escape(fieldId)
+      : String(fieldId).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  const itemLabel = document.querySelector(
+    `li.builder-field-item[data-field-id="${safeId}"] .builder-field-row__label`
+  );
+  if (!itemLabel) return;
+  const isContentBlock = ["title", "static_text", "list"].includes(field.type);
+  let label = isContentBlock
+    ? stripHtmlToPlain(field.content || "") || "Sin texto"
+    : field.label || "Sin etiqueta";
+  if (label.length > 30) label = label.substring(0, 30) + "...";
+  itemLabel.textContent = label;
 }
 
 function renderBuilderFieldList() {
@@ -1671,29 +1734,36 @@ function bindBuilderPageEvents(user) {
   inspector?.addEventListener("input", () => {
     const field = builderDraft?.fields.find((f) => f.id === builderSelectedFieldId);
     if (!field) return;
-    
+
     const isContentBlock = ["title", "static_text", "list"].includes(field.type);
-    
+
     if (isContentBlock) {
-      const c = document.getElementById("inspector-content");
-      if (c) field.content = c.value;
+      if (field.type === "list") {
+        const c = document.getElementById("inspector-content");
+        if (c) field.content = c.value;
+      } else {
+        const ed = document.getElementById("inspector-content-editable");
+        if (ed) field.content = sanitizeWebinarHtml(ed.innerHTML);
+      }
     } else {
       const l = document.getElementById("inspector-label");
       const p = document.getElementById("inspector-placeholder");
       if (l) field.label = l.value;
       if (p) field.placeholder = p.value;
     }
-    
+
+    if (builderSelectedFieldId) {
+      updateBuilderFieldRowLabel(builderSelectedFieldId);
+    }
     syncBuilderPreview();
-    renderBuilderFieldList();
   });
 
   inspector?.addEventListener("change", () => {
     const field = builderDraft?.fields.find((f) => f.id === builderSelectedFieldId);
     if (!field) return;
-    
+
     const isContentBlock = ["title", "static_text", "list"].includes(field.type);
-    
+
     if (isContentBlock) {
       if (field.type === "list") {
         const t = document.getElementById("inspector-list-type");
@@ -1709,9 +1779,11 @@ function bindBuilderPageEvents(user) {
         field.required = r.checked;
       }
     }
-    
+
+    if (builderSelectedFieldId) {
+      updateBuilderFieldRowLabel(builderSelectedFieldId);
+    }
     syncBuilderPreview();
-    renderBuilderFieldList();
   });
 
   fieldList?.addEventListener("click", (e) => {
@@ -1773,6 +1845,35 @@ function bindBuilderPageEvents(user) {
       renderBuilderFieldList();
     }
   });
+
+  const inspEd = document.getElementById("inspector-content-editable");
+  const inspTb = document.getElementById("inspector-rich-toolbar");
+  if (inspTb && inspEd && inspTb.dataset.mapRichBound !== "1") {
+    inspTb.dataset.mapRichBound = "1";
+    bindRichToolbar(inspTb, inspEd, {
+      onChange: () => {
+        const field = builderDraft?.fields.find((f) => f.id === builderSelectedFieldId);
+        if (!field || !["title", "static_text"].includes(field.type)) return;
+        field.content = sanitizeWebinarHtml(inspEd.innerHTML);
+        if (builderSelectedFieldId) updateBuilderFieldRowLabel(builderSelectedFieldId);
+        syncBuilderPreview();
+      },
+    });
+  }
+
+  const footEd = document.getElementById("builder-footer-editable");
+  const footTb = document.getElementById("builder-footer-rich-toolbar");
+  if (footTb && footEd && footTb.dataset.mapRichBound !== "1") {
+    footTb.dataset.mapRichBound = "1";
+    bindRichToolbar(footTb, footEd, {
+      onChange: () => syncBuilderPreview(),
+    });
+    bindRichEditorInput(footEd, {
+      onInput: () => {
+        syncBuilderPreview();
+      },
+    });
+  }
 }
 
 function escapeAttr(text) {

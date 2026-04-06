@@ -25,6 +25,7 @@ import { getMessagingMessagesFromWebinar } from "./messaging-model.js";
 import { fetchGmailPublicBackend } from "../../src/services/gmail-backend.js";
 
 let loadedWebinarId = "";
+let registrationSubmitting = false;
 
 setWebinarsHeaderLoading("Verificando…");
 onAuthStateChanged(auth, async (user) => {
@@ -130,6 +131,19 @@ async function loadPublishedWebinar(hex, mount, topStatus) {
       event.preventDefault();
       void handleRegistrationSubmit(form, normalized, raw);
     });
+
+    document.getElementById("webinar-public-again")?.addEventListener("click", () => {
+      const thanks = document.getElementById("webinar-public-thanks");
+      const f = document.getElementById("webinar-public-form");
+      const st = document.getElementById("public-viewer-status");
+      thanks?.setAttribute("hidden", "");
+      f?.removeAttribute("hidden");
+      f?.reset();
+      if (st) st.textContent = "";
+      registrationSubmitting = false;
+      const btn = f?.querySelector('button[type="submit"]');
+      if (btn instanceof HTMLButtonElement) btn.disabled = false;
+    });
   } catch (e) {
     console.error(e);
     setTopStatus(
@@ -167,6 +181,11 @@ function buildInitialEmailStatus(webinarRaw) {
  */
 async function handleRegistrationSubmit(form, webinar, webinarRaw) {
   const statusEl = document.getElementById("public-viewer-status");
+  const thanksEl = document.getElementById("webinar-public-thanks");
+  const submitBtn = form.querySelector('button[type="submit"]');
+
+  if (registrationSubmitting) return;
+
   const fd = new FormData(form);
   const answers = buildAnswersFromForm(fd, webinar.fields);
   const errors = validateAnswers(answers, webinar.fields);
@@ -187,6 +206,8 @@ async function handleRegistrationSubmit(form, webinar, webinarRaw) {
     return;
   }
 
+  registrationSubmitting = true;
+  if (submitBtn instanceof HTMLButtonElement) submitBtn.disabled = true;
   if (statusEl) statusEl.textContent = "Enviando…";
 
   try {
@@ -199,13 +220,11 @@ async function handleRegistrationSubmit(form, webinar, webinarRaw) {
         createdAt: serverTimestamp(),
       }
     );
-    if (statusEl) {
-      statusEl.textContent =
-        "¡Listo! Tu inscripción fue registrada. Pronto recibirás novedades por correo.";
-    }
-    form.reset();
 
-    // Disparar procesamiento de correos automáticos en el backend
+    form.setAttribute("hidden", "");
+    thanksEl?.removeAttribute("hidden");
+    if (statusEl) statusEl.textContent = "";
+
     try {
       await fetchGmailPublicBackend("/api/gmail/public-trigger", {
         webinarId: loadedWebinarId,
@@ -220,6 +239,8 @@ async function handleRegistrationSubmit(form, webinar, webinarRaw) {
       statusEl.textContent =
         "No se pudo enviar. Revisa tu conexión o inténtalo más tarde.";
     }
+    registrationSubmitting = false;
+    if (submitBtn instanceof HTMLButtonElement) submitBtn.disabled = false;
   }
 }
 

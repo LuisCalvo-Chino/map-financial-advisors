@@ -2,8 +2,12 @@ import {
   DEFAULT_WEBINAR_LOGO_PATH,
   resolveWebinarLogoUrl,
 } from "./webinar-defaults.js";
+import {
+  htmlFromPlainOrSanitized,
+  sanitizeWebinarHtml,
+} from "./rich-text-toolbar.js";
 
-const LOGO_HEIGHT_MIN = 100;
+const LOGO_HEIGHT_MIN = 80;
 const LOGO_HEIGHT_MAX = 400;
 const LOGO_HEIGHT_DEFAULT = 180;
 
@@ -84,6 +88,8 @@ export function normalizeWebinarDocFromFirestore(raw) {
       subtitle: typeof branding.subtitle === "string" ? branding.subtitle : "",
       footerText:
         typeof branding.footerText === "string" ? branding.footerText : "",
+      footerHtml:
+        typeof branding.footerHtml === "string" ? branding.footerHtml : "",
     },
     fields: fields
       .filter((f) => f && typeof f === "object")
@@ -139,15 +145,21 @@ export function renderWebinarFormShell(container, doc, opts = {}) {
       const common = `id="${safeId}" name="${escapeHtml(field.id)}" class="webinars-public-input" placeholder="${escapeHtml(field.placeholder)}" ${req} ${ro} ${dis} style="${inputStyle}"`;
 
       if (field.type === "title") {
+        const inner = sanitizeWebinarHtml(
+          htmlFromPlainOrSanitized(field.content || field.label)
+        );
         return `
           <div class="webinars-public-field webinars-public-field--full">
-            <h3 style="color: var(--w-title); font-family: var(--font-titles); margin: 1rem 0 0.5rem;">${escapeHtml(field.content || field.label)}</h3>
+            <div class="webinars-rich-block webinars-rich-block--title" style="color: var(--w-title); font-family: var(--font-titles); font-weight: 700; font-size: 1.25rem; margin: 1rem 0 0.5rem;">${inner || escapeHtml(field.label)}</div>
           </div>
         `;
       } else if (field.type === "static_text") {
+        const inner = sanitizeWebinarHtml(
+          htmlFromPlainOrSanitized(field.content || field.label)
+        );
         return `
           <div class="webinars-public-field webinars-public-field--full">
-            <div style="color: var(--w-text); font-family: var(--font-body); white-space: pre-wrap; margin-bottom: 0.5rem;">${escapeHtml(field.content || field.label)}</div>
+            <div class="webinars-rich-block" style="color: var(--w-text); font-family: var(--font-body); margin-bottom: 0.5rem;">${inner || escapeHtml(field.label)}</div>
           </div>
         `;
       } else if (field.type === "list") {
@@ -197,9 +209,12 @@ export function renderWebinarFormShell(container, doc, opts = {}) {
     })
     .join("");
 
-  const previewBanner = previewMode
-    ? `<p class="webinars-preview-banner">Vista previa — así verá el formulario quien abra el enlace público.</p>`
-    : "";
+  const previewBanner = "";
+
+  const footerHtmlRaw = String(b.footerHtml || "").trim();
+  const footerBlock = footerHtmlRaw
+    ? `<div class="webinars-footer-html">${sanitizeWebinarHtml(footerHtmlRaw)}</div>`
+    : `<div class="webinars-footer-plain" style="white-space: pre-wrap;">${escapeHtml(b.footerText || "MAP")}</div>`;
 
   const vars = [
     `--w-header:${escapeHtml(b.headerColor)}`,
@@ -239,9 +254,20 @@ export function renderWebinarFormShell(container, doc, opts = {}) {
           </div>
           <p id="public-viewer-status" class="webinars-status webinars-public-form-status" aria-live="polite"></p>
         </form>
+        ${
+          previewMode
+            ? ""
+            : `<div id="webinar-public-thanks" class="webinars-public-thanks" hidden>
+          <p class="webinars-public-thanks__title">¡Gracias!</p>
+          <p class="webinars-public-thanks__text">Tu inscripción fue registrada. Pronto recibirás novedades por correo.</p>
+          <button type="button" id="webinar-public-again" class="btn-map-primary webinars-public-thanks__again">
+            Enviar otro formulario
+          </button>
+        </div>`
+        }
       </div>
       <footer class="webinars-public-shell__footer">
-        <p>${escapeHtml(b.footerText || "MAP")}</p>
+        ${footerBlock}
       </footer>
     </section>
   `;

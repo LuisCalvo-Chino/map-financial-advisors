@@ -6,8 +6,8 @@ Este documento es tu guía definitiva, clic a clic, para publicar tu plataforma 
 
 ## 📋 PREPARACIÓN: Conoce tus URLs
 Antes de empezar, ten a mano estas dos URLs (anótalas en un bloc de notas):
-1. **URL de tu Frontend (GitHub Pages):** Será algo como `https://tu-usuario.github.io/MAPwebsite` (Asegúrate de no poner `/` al final cuando te la pidan, a menos que se indique).
-2. **URL de tu Backend (Vercel):** Entra a Vercel, abre tu proyecto y copia la URL que aparece debajo del nombre del proyecto (ej. `https://map-backend-tu-usuario.vercel.app`). Tampoco debe llevar `/` al final.
+1. **URL de tu Frontend (GitHub Pages):** 'https://github.com/LuisCalvo-Chino/map-financial-advisors.git'
+2. **URL de tu Backend (Vercel):** https://map-financial-advisors.vercel.app
 
 ---
 
@@ -32,6 +32,7 @@ Vamos a decirle a tu proyecto de Vercel existente cuáles son las contraseñas r
    - **Value:** Aquí debes poner la URL de tu localhost Y la de tu GitHub Pages, separadas por una coma y SIN barra al final (`/`).
    - *Ejemplo exacto:* `http://localhost:5173,https://tu-usuario.github.io`
    - Haz clic en **"Save"**.
+   - **Key:** `GMAIL_OAUTH_REDIRECT_URI` | **Value:** La URI **exacta** del callback de Gmail en producción (la misma que en Google Cloud), por ejemplo `https://tu-usuario.github.io/tu-repo/gmail-oauth-callback.html`. En local puedes omitirla (el backend usa por defecto `http://localhost:5173/gmail-oauth-callback.html`). Esta variable la usa el envío automático de correos (`public-trigger`) al renovar tokens; si no coincide con la URI con la que conectaste Gmail, el refresh fallará fuera de tu PC.
 7. **Aplicar los cambios:** Ve a la pestaña superior **"Deployments"**. Haz clic en los tres puntitos (`...`) a la derecha del despliegue más reciente y selecciona **"Redeploy"**. Deja las opciones por defecto y haz clic en el botón negro **"Redeploy"**. Espera a que termine.
 
 ---
