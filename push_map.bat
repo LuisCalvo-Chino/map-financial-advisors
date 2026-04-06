@@ -36,4 +36,9 @@ echo.
 echo ========================================
 echo [ÉXITO] Cambios subidos a GitHub (MAP)
 echo ========================================
+echo.
+echo NOTA: La web publicada en GitHub Pages usa la rama gh-pages.
+echo       Para ver cambios en el sitio, ejecuta: npm run deploy
+echo       o el script deploy_github_pages.bat
+echo.
 pause
