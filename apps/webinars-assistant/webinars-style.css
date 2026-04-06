@@ -897,6 +897,38 @@ button.webinars-new-cta:disabled {
   margin-left: auto;
 }
 
+/* Contraste en columna oscura: el secundario global usa --map-slate y casi no se ve aquí */
+.webinars-builder-preview-column .webinars-preview-download-btn.btn-map-secondary {
+  background: rgba(244, 240, 237, 0.14);
+  color: var(--map-light, #f4f0ed);
+  border-color: rgba(244, 240, 237, 0.55);
+}
+
+.webinars-builder-preview-column .webinars-preview-download-btn.btn-map-secondary:hover {
+  background: rgba(244, 240, 237, 0.24);
+  color: #fff;
+  border-color: rgba(168, 159, 143, 0.85);
+}
+
+.webinars-entries-toolbar__right--wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+/* Misma barra que Guardar: ya hereda estilos de panel; refuerzo ligero */
+.webinars-preview-download-btn--toolbar.btn-map-secondary {
+  border-color: rgba(244, 240, 237, 0.45);
+  color: rgba(244, 240, 237, 0.95);
+}
+
+.webinars-preview-download-btn--toolbar.btn-map-secondary:hover {
+  border-color: var(--map-light, #f4f0ed);
+  color: var(--map-light, #f4f0ed);
+}
+
 .webinars-preview-column-title {
   margin: 0 0 1rem;
   font-size: 1.05rem;

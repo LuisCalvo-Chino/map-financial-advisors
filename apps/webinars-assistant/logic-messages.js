@@ -845,7 +845,7 @@ function bindEvents() {
 
   document.getElementById("btn-msg-save-changes").addEventListener("click", saveChanges);
 
-  document.getElementById("btn-msg-download-preview-html")?.addEventListener("click", () => {
+  function downloadMessagePreviewHtml() {
     readFormIntoTemplate();
     const bodyHtml = buildEmailHtmlString();
     const rawName =
@@ -872,7 +872,12 @@ ${bodyHtml}
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-  });
+  }
+
+  document.getElementById("btn-msg-download-preview-html")?.addEventListener("click", downloadMessagePreviewHtml);
+  document
+    .getElementById("btn-msg-download-preview-html-toolbar")
+    ?.addEventListener("click", downloadMessagePreviewHtml);
 
   document.getElementById("btn-msg-add-block").addEventListener("click", () => {
     const type = document.getElementById("msg-new-block-type").value;
