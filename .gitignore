@@ -19,6 +19,10 @@ local-dev/
 serviceAccount*.json
 *-firebase-adminsdk-*.json
 
+# Scripts Windows locales (no subir), excepto el asistente de push al repo
+*.bat
+!push-github-map.bat
+
 # Sistema operativo
 .DS_Store
 Thumbs.db

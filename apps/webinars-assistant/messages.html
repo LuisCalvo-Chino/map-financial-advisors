@@ -177,6 +177,21 @@
             >
               <h4 class="builder-inspector-title">Opciones del bloque</h4>
               <div class="webinars-form-grid webinars-form-grid--compact">
+                <div
+                  id="msg-block-cta-caption-field"
+                  class="webinars-form-field webinars-form-field--full"
+                  style="display: none;"
+                >
+                  <label for="msg-block-cta-caption-editable">Texto superior (opcional)</label>
+                  <div id="msg-block-cta-caption-toolbar" class="webinars-rich-toolbar-host"></div>
+                  <div
+                    id="msg-block-cta-caption-editable"
+                    class="webinars-rich-editor"
+                    role="textbox"
+                    contenteditable="true"
+                    aria-multiline="true"
+                  ></div>
+                </div>
                 <div class="webinars-form-field webinars-form-field--full" id="msg-block-content-field">
                   <label for="msg-block-content-editable" id="msg-block-content-label">Contenido</label>
                   <div id="msg-block-rich-stack" class="webinars-rich-stack" hidden>
@@ -217,45 +232,41 @@
                     <input id="msg-block-zoom-pwd" type="text" placeholder="Ej: MAP" autocomplete="off" />
                   </div>
                 </div>
-                <div
-                  id="msg-block-cta-wrap"
-                  class="webinars-form-grid webinars-form-grid--compact"
-                  style="display: none; grid-column: 1 / -1;"
+                <p
+                  id="msg-block-cta-style-hint"
+                  class="webinars-field-hint webinars-form-field--full"
+                  style="display: none; margin: 0 0 0.25rem;"
                 >
-                  <p class="webinars-field-hint" style="grid-column: 1 / -1; margin: 0 0 0.25rem;">
-                    Estilo del cuadro que envuelve el botón en el correo.
-                  </p>
-                  <div class="webinars-form-field webinars-form-field--full">
-                    <label for="msg-block-cta-caption">Texto superior (opcional)</label>
-                    <input
-                      id="msg-block-cta-caption"
-                      type="text"
-                      maxlength="240"
-                      placeholder="Ej.: Únete a la sesión en vivo"
-                      autocomplete="off"
-                    />
-                  </div>
+                  Estilo del cuadro que envuelve el botón en el correo.
+                </p>
+                <div id="msg-block-cta-row-box" class="webinars-cta-inspector-pair" style="display: none;">
                   <div class="webinars-form-field">
-                    <label for="msg-block-cta-caption-color">Color del texto superior</label>
-                    <input id="msg-block-cta-caption-color" type="color" value="#f4f0ed" />
-                  </div>
-                  <div class="webinars-form-field webinars-form-field--full">
-                    <label for="msg-block-cta-font">Tipografía (texto superior y botón)</label>
-                    <select id="msg-block-cta-font">
-                      <option value="montserrat">Montserrat</option>
-                      <option value="poppins">Poppins</option>
-                      <option value="georgia">Georgia</option>
-                      <option value="arial">Arial / Helvetica</option>
-                    </select>
+                    <label for="msg-block-cta-box-border">Borde izquierdo del cuadro</label>
+                    <input id="msg-block-cta-box-border" type="color" value="#a89f8f" />
                   </div>
                   <div class="webinars-form-field">
                     <label for="msg-block-cta-box-bg">Fondo del cuadro</label>
                     <input id="msg-block-cta-box-bg" type="color" value="#2a2c2c" />
                   </div>
+                </div>
+                <div id="msg-block-cta-row-colors" class="webinars-cta-inspector-pair" style="display: none;">
                   <div class="webinars-form-field">
-                    <label for="msg-block-cta-box-border">Borde izquierdo del cuadro</label>
-                    <input id="msg-block-cta-box-border" type="color" value="#a89f8f" />
+                    <label for="msg-block-cta-caption-color">Color del texto superior</label>
+                    <input id="msg-block-cta-caption-color" type="color" value="#f4f0ed" />
                   </div>
+                  <div id="msg-block-cta-meta-color-field" class="webinars-form-field" style="display: none;">
+                    <label for="msg-block-cta-zoom-meta-color">Color del texto inferior (ID y Código)</label>
+                    <input id="msg-block-cta-zoom-meta-color" type="color" value="#ffffff" />
+                  </div>
+                </div>
+                <div id="msg-block-cta-font-field" class="webinars-form-field webinars-form-field--full" style="display: none;">
+                  <label for="msg-block-cta-font">Tipografía (texto superior y botón)</label>
+                  <select id="msg-block-cta-font">
+                    <option value="montserrat">Montserrat</option>
+                    <option value="poppins">Poppins</option>
+                    <option value="georgia">Georgia</option>
+                    <option value="arial">Arial / Helvetica</option>
+                  </select>
                 </div>
               </div>
             </div>

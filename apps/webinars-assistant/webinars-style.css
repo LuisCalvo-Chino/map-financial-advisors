@@ -548,6 +548,20 @@ button.webinars-new-cta:disabled {
   gap: 0.75rem;
 }
 
+.webinars-cta-inspector-pair {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem 1.25rem;
+  align-items: end;
+}
+
+@media (max-width: 520px) {
+  .webinars-cta-inspector-pair {
+    grid-template-columns: 1fr;
+  }
+}
+
 .webinars-logo-height-row {
   display: flex;
   align-items: center;

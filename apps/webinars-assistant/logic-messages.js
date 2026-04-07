@@ -121,6 +121,7 @@ function getCtaBlockStyle(block) {
   return {
     caption: typeof block.ctaCaption === "string" ? block.ctaCaption : "",
     captionColor: sanitizeHexColor(block.ctaCaptionColor, "#F4F0ED"),
+    zoomMetaColor: sanitizeHexColor(block.ctaZoomMetaColor, "#FFFFFF"),
     boxBg: sanitizeHexColor(block.ctaBoxBg, "#2A2C2C"),
     boxBorder: sanitizeHexColor(block.ctaBoxBorderColor, "#A89F8F"),
     fontKey,
@@ -172,8 +173,13 @@ const els = {
   blockZoomId: document.getElementById("msg-block-zoom-id"),
   blockZoomPwd: document.getElementById("msg-block-zoom-pwd"),
 
-  blockCtaWrap: document.getElementById("msg-block-cta-wrap"),
-  blockCtaCaption: document.getElementById("msg-block-cta-caption"),
+  blockCtaCaptionField: document.getElementById("msg-block-cta-caption-field"),
+  blockCtaStyleHint: document.getElementById("msg-block-cta-style-hint"),
+  blockCtaRowBox: document.getElementById("msg-block-cta-row-box"),
+  blockCtaRowColors: document.getElementById("msg-block-cta-row-colors"),
+  blockCtaMetaColorField: document.getElementById("msg-block-cta-meta-color-field"),
+  blockCtaZoomMetaColor: document.getElementById("msg-block-cta-zoom-meta-color"),
+  blockCtaFontField: document.getElementById("msg-block-cta-font-field"),
   blockCtaCaptionColor: document.getElementById("msg-block-cta-caption-color"),
   blockCtaFont: document.getElementById("msg-block-cta-font"),
   blockCtaBoxBg: document.getElementById("msg-block-cta-box-bg"),
@@ -445,6 +451,21 @@ function readFormIntoTemplate() {
     titleColor: els.titleColor.value,
     textColor: els.textColor.value,
   };
+
+  if (selectedCtaId && currentTemplateData.blocks) {
+    const block = currentTemplateData.blocks.find((b) => b.id === selectedCtaId);
+    const msgEd = document.getElementById("msg-block-content-editable");
+    const richStack = document.getElementById("msg-block-rich-stack");
+    const msgCapEd = document.getElementById("msg-block-cta-caption-editable");
+    if (block && msgEd && richStack && !richStack.hidden) {
+      if (["title", "text"].includes(block.type) || isCtaBlockType(block.type)) {
+        block.content = sanitizeWebinarHtml(msgEd.innerHTML);
+      }
+    }
+    if (block && msgCapEd && isCtaBlockType(block.type)) {
+      block.ctaCaption = sanitizeWebinarHtml(msgCapEd.innerHTML);
+    }
+  }
 }
 
 function parkMsgBlockInspector() {
@@ -476,18 +497,25 @@ function attachMsgBlockInspectorUnderSelectedRow() {
 }
 
 /**
- * @param {{ id: string, type: string, content?: string, url?: string, listType?: string, meetingId?: string, meetingPassword?: string, ctaCaption?: string, ctaCaptionColor?: string, ctaBoxBg?: string, ctaBoxBorderColor?: string, ctaFontFamily?: string }} block
+ * @param {{ id: string, type: string, content?: string, url?: string, listType?: string, meetingId?: string, meetingPassword?: string, ctaCaption?: string, ctaCaptionColor?: string, ctaZoomMetaColor?: string, ctaBoxBg?: string, ctaBoxBorderColor?: string, ctaFontFamily?: string }} block
  */
 function fillMsgBlockInspectorForm(block) {
   els.blockContentField.style.display = "none";
   els.blockListTypeField.style.display = "none";
   els.blockUrlField.style.display = "none";
   els.blockZoomFields.style.display = "none";
-  if (els.blockCtaWrap) els.blockCtaWrap.style.display = "none";
+
+  if (els.blockCtaCaptionField) els.blockCtaCaptionField.style.display = "none";
+  if (els.blockCtaStyleHint) els.blockCtaStyleHint.style.display = "none";
+  if (els.blockCtaRowBox) els.blockCtaRowBox.style.display = "none";
+  if (els.blockCtaRowColors) els.blockCtaRowColors.style.display = "none";
+  if (els.blockCtaFontField) els.blockCtaFontField.style.display = "none";
+  if (els.blockCtaMetaColorField) els.blockCtaMetaColorField.style.display = "none";
 
   const richStack = document.getElementById("msg-block-rich-stack");
   const ed = document.getElementById("msg-block-content-editable");
   const ta = els.blockContent;
+  const capEd = document.getElementById("msg-block-cta-caption-editable");
 
   if (["title", "text", "list"].includes(block.type)) {
     els.blockContentField.style.display = "block";
@@ -509,11 +537,11 @@ function fillMsgBlockInspectorForm(block) {
       if (ed) ed.innerHTML = htmlFromPlainOrSanitized(block.content || "");
     }
   } else {
-    if (richStack) richStack.hidden = true;
-    if (ta) ta.style.display = "block";
+    if (richStack) richStack.hidden = false;
+    if (ta) ta.style.display = "none";
     els.blockContentField.style.display = "block";
     els.blockContentLabel.textContent = "Texto del botón";
-    els.blockContent.value = block.content || "";
+    if (ed) ed.innerHTML = htmlFromPlainOrSanitized(block.content || "");
 
     els.blockUrlField.style.display = "block";
     els.blockUrl.value = block.url || "";
@@ -524,11 +552,24 @@ function fillMsgBlockInspectorForm(block) {
       els.blockZoomPwd.value = block.meetingPassword || "";
     }
 
-    if (els.blockCtaWrap && isCtaBlockType(block.type)) {
-      els.blockCtaWrap.style.display = "grid";
+    if (isCtaBlockType(block.type)) {
       const st = getCtaBlockStyle(/** @type {Record<string, unknown>} */ (block));
-      if (els.blockCtaCaption) els.blockCtaCaption.value = st.caption;
+      if (els.blockCtaCaptionField) els.blockCtaCaptionField.style.display = "block";
+      if (els.blockCtaStyleHint) els.blockCtaStyleHint.style.display = "block";
+      if (els.blockCtaRowBox) els.blockCtaRowBox.style.display = "grid";
+      if (els.blockCtaRowColors) {
+        els.blockCtaRowColors.style.display = "grid";
+        els.blockCtaRowColors.style.gridTemplateColumns =
+          block.type === "zoom" ? "1fr 1fr" : "1fr";
+      }
+      if (els.blockCtaFontField) els.blockCtaFontField.style.display = "block";
+      if (els.blockCtaMetaColorField) {
+        els.blockCtaMetaColorField.style.display =
+          block.type === "zoom" ? "block" : "none";
+      }
+      if (capEd) capEd.innerHTML = htmlFromPlainOrSanitized(st.caption);
       if (els.blockCtaCaptionColor) els.blockCtaCaptionColor.value = st.captionColor;
+      if (els.blockCtaZoomMetaColor) els.blockCtaZoomMetaColor.value = st.zoomMetaColor;
       if (els.blockCtaFont) els.blockCtaFont.value = st.fontKey;
       if (els.blockCtaBoxBg) els.blockCtaBoxBg.value = st.boxBg;
       if (els.blockCtaBoxBorder) els.blockCtaBoxBorder.value = st.boxBorder;
@@ -641,9 +682,11 @@ function buildEmailHtmlString() {
       } else {
         // Es un botón
         const st = getCtaBlockStyle(/** @type {Record<string, unknown>} */ (block));
-        const captionTrim = st.caption.trim();
-        const captionHtml = captionTrim
-          ? `<p style="margin:0 0 14px 0;font-size:14px;line-height:1.45;color:${st.captionColor};font-family:${st.fontCss};text-align:center;">${escapeHtml(captionTrim)}</p>`
+        const captionInner = sanitizeWebinarHtml(
+          htmlFromPlainOrSanitized(st.caption)
+        );
+        const captionHtml = stripHtmlToPlain(captionInner)
+          ? `<div style="margin:0 0 14px 0;font-size:14px;line-height:1.45;color:${st.captionColor};font-family:${st.fontCss};text-align:center;">${captionInner}</div>`
           : "";
 
         let bgColor = d.btnColor;
@@ -658,7 +701,8 @@ function buildEmailHtmlString() {
           iconUrl = "https://luiscalvo-chino.github.io/Chino-PC-Master/imagenes/Icono%20Zoom.png";
           
           if (block.meetingId || block.meetingPassword) {
-            extraHtml = `<span style="font-size: 12px; color: #FFFFFF; display: block; text-align: center; margin-top: 15px;">`;
+            const mc = st.zoomMetaColor;
+            extraHtml = `<span style="font-size: 12px; color: ${mc}; display: block; text-align: center; margin-top: 15px;">`;
             if (block.meetingId) extraHtml += `ID: ${escapeHtml(block.meetingId)}`;
             if (block.meetingId && block.meetingPassword) extraHtml += ` | `;
             if (block.meetingPassword) extraHtml += `Código: ${escapeHtml(block.meetingPassword)}`;
@@ -693,6 +737,10 @@ function buildEmailHtmlString() {
 
         let iconHtml = iconUrl ? `<img src="${iconUrl}" width="30" style="vertical-align: middle; margin-right: 10px; border: 0;" alt="Icono">` : "";
 
+        const btnLabelHtml = sanitizeWebinarHtml(
+          htmlFromPlainOrSanitized(String(block.content || block.type))
+        );
+
         return `
           <table width="100%" border="0" cellpadding="0" cellspacing="0" class="info-box" style="background-color: ${st.boxBg}; border-left: 4px solid ${st.boxBorder}; padding: 20px; margin: 25px 0;">
             <tr>
@@ -702,7 +750,7 @@ function buildEmailHtmlString() {
                   <tr>
                     <td align="center" style="border-bottom: 4px solid ${block.type === 'instagram' ? '#a11575' : block.type === 'zoom' ? '#173862' : 'rgba(0,0,0,0.2)'}; border-radius: 8px;">
                       <a href="${escapeAttr(block.url || '#')}" target="_blank" style="${btnStyle}">
-                        ${iconHtml}${escapeHtml(block.content || block.type)}
+                        ${iconHtml}${btnLabelHtml || escapeHtml(String(block.content || block.type))}
                       </a>
                     </td>
                   </tr>
@@ -898,6 +946,7 @@ ${bodyHtml}
     if (isCtaBlockType(type)) {
       newBlock.ctaCaption = "";
       newBlock.ctaCaptionColor = "#F4F0ED";
+      newBlock.ctaZoomMetaColor = "#FFFFFF";
       newBlock.ctaBoxBg = "#2A2C2C";
       newBlock.ctaBoxBorderColor = "#A89F8F";
       newBlock.ctaFontFamily = "montserrat";
@@ -997,7 +1046,11 @@ ${bodyHtml}
     const syncMsgBlockRichFromEditor = () => {
       if (!selectedCtaId) return;
       const block = currentTemplateData.blocks.find((c) => c.id === selectedCtaId);
-      if (!block || !["title", "text"].includes(block.type)) return;
+      if (
+        !block ||
+        (!["title", "text"].includes(block.type) && !isCtaBlockType(block.type))
+      )
+        return;
       block.content = sanitizeWebinarHtml(msgBlockEd.innerHTML);
       updateMsgBlockRowLabel();
       updatePreview();
@@ -1007,9 +1060,36 @@ ${bodyHtml}
       onInput: (html) => {
         if (!selectedCtaId) return;
         const block = currentTemplateData.blocks.find((c) => c.id === selectedCtaId);
-        if (!block || !["title", "text"].includes(block.type)) return;
+        if (
+          !block ||
+          (!["title", "text"].includes(block.type) && !isCtaBlockType(block.type))
+        )
+          return;
         block.content = html;
         updateMsgBlockRowLabel();
+        updatePreview();
+      },
+    });
+  }
+
+  const msgCapEd = document.getElementById("msg-block-cta-caption-editable");
+  const msgCapTb = document.getElementById("msg-block-cta-caption-toolbar");
+  if (msgCapTb && msgCapEd && msgCapTb.dataset.mapRichBound !== "1") {
+    msgCapTb.dataset.mapRichBound = "1";
+    const syncCaptionFromEditor = () => {
+      if (!selectedCtaId) return;
+      const block = currentTemplateData.blocks.find((c) => c.id === selectedCtaId);
+      if (!block || !isCtaBlockType(block.type)) return;
+      block.ctaCaption = sanitizeWebinarHtml(msgCapEd.innerHTML);
+      updatePreview();
+    };
+    bindRichToolbar(msgCapTb, msgCapEd, { onChange: syncCaptionFromEditor });
+    bindRichEditorInput(msgCapEd, {
+      onInput: (html) => {
+        if (!selectedCtaId) return;
+        const block = currentTemplateData.blocks.find((c) => c.id === selectedCtaId);
+        if (!block || !isCtaBlockType(block.type)) return;
+        block.ctaCaption = html;
         updatePreview();
       },
     });
@@ -1072,12 +1152,6 @@ ${bodyHtml}
     }
   };
 
-  els.blockCtaCaption?.addEventListener("input", (e) => {
-    syncCtaStyle((b) => {
-      b.ctaCaption = e.target.value;
-    });
-  });
-
   const onCtaColor = (prop, el) => {
     el?.addEventListener("input", (e) => {
       syncCtaStyle((b) => {
@@ -1092,6 +1166,7 @@ ${bodyHtml}
   };
 
   onCtaColor("ctaCaptionColor", els.blockCtaCaptionColor);
+  onCtaColor("ctaZoomMetaColor", els.blockCtaZoomMetaColor);
   onCtaColor("ctaBoxBg", els.blockCtaBoxBg);
   onCtaColor("ctaBoxBorderColor", els.blockCtaBoxBorder);
 
