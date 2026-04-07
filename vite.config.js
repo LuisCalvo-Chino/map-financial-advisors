@@ -41,6 +41,9 @@ export default defineConfig({
           __dirname,
           "apps/webinars-assistant/form-messages.html"
         ),
+        // Incluir en dist/ para GitHub Pages (gh-pages solo publica dist/)
+        legalTerminos: resolve(__dirname, "legal/terminos.html"),
+        legalPrivacidad: resolve(__dirname, "legal/privacidad.html"),
       },
     },
   },
