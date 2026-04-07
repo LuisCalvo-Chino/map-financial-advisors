@@ -953,3 +953,74 @@ exports.processScheduledWebinarMessages = onSchedule(
     return null;
   }
 );
+
+// -------------------------------------------------------------------------
+// Papelera webinars: borrado permanente estricto 72 h después de archivedAt
+// (misma ventana que apps/webinars-assistant/logic-admin.js TRASH_RETENTION_MS)
+// -------------------------------------------------------------------------
+const WEBINAR_TRASH_RETENTION_MS = 72 * 60 * 60 * 1000;
+const PURGE_ARCHIVED_WEBINARS_BATCH = 40;
+
+/**
+ * Elimina todos los documentos de participantes y luego el webinar (Admin SDK).
+ * @param {FirebaseFirestore.DocumentReference} webinarRef
+ */
+async function deleteWebinarAndParticipantes(webinarRef) {
+  const partCol = webinarRef.collection("participantes");
+  const chunk = 450;
+  for (;;) {
+    const snap = await partCol.limit(chunk).get();
+    if (snap.empty) break;
+    const batch = db.batch();
+    snap.docs.forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+  }
+  await webinarRef.delete();
+}
+
+/**
+ * Programada: elimina formularios con archivedAt anterior a (ahora - 72 h).
+ */
+exports.purgeArchivedWebinarsPastRetention = onSchedule(
+  {
+    schedule: "every 15 minutes",
+    timeZone: "America/Costa_Rica",
+    timeoutSeconds: 540,
+    memory: "512MiB",
+  },
+  async () => {
+    const cutoff = admin.firestore.Timestamp.fromMillis(Date.now() - WEBINAR_TRASH_RETENTION_MS);
+    let totalDeleted = 0;
+    let iterations = 0;
+    const maxIterations = 200;
+
+    while (iterations < maxIterations) {
+      iterations += 1;
+      const snap = await db
+        .collection("webinars")
+        .where("archivedAt", "<", cutoff)
+        .limit(PURGE_ARCHIVED_WEBINARS_BATCH)
+        .get();
+
+      if (snap.empty) break;
+
+      for (const docSnap of snap.docs) {
+        try {
+          await deleteWebinarAndParticipantes(docSnap.ref);
+          totalDeleted += 1;
+        } catch (err) {
+          console.error("[purgeArchivedWebinarsPastRetention] fallo", docSnap.id, err);
+        }
+      }
+    }
+
+    if (iterations >= maxIterations) {
+      console.warn(
+        "[purgeArchivedWebinarsPastRetention] se alcanzó el límite de iteraciones; puede quedar trabajo pendiente hasta la próxima ejecución."
+      );
+    }
+
+    console.log(`[purgeArchivedWebinarsPastRetention] webinars eliminados: ${totalDeleted}`);
+    return null;
+  }
+);

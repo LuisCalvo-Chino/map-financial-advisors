@@ -97,7 +97,13 @@ service cloud.firestore {
           && request.resource.data.createdBy.uid == resource.data.createdBy.uid
           && request.resource.data.publicHex == resource.data.publicHex
         );
-      allow delete: if false;
+      // Borrado permanente solo si el formulario está en papelera (archivado).
+      allow delete: if isAdmin()
+        || (
+          isSignedIn()
+          && resource.data.createdBy.uid == request.auth.uid
+          && resource.data.keys().hasAny(['archivedAt'])
+        );
 
       // Subcolección participantes — respuestas del formulario público.
       // - Lectura: solo admin o dueño del webinar padre.

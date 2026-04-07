@@ -6,6 +6,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { getMessagingMessagesFromWebinar } from "./messaging-model.js";
+import { mountWebinarsShortNav } from "./webinars-short-nav.js";
 
 /**
  * @param {import("firebase/auth").User} user
@@ -18,7 +19,6 @@ export async function initFormMessagesPage(user, _profile) {
   const panel = document.getElementById("webinars-form-msg-panel");
   const mount = document.getElementById("form-msg-list-mount");
   const titleEl = document.getElementById("form-msg-title");
-  const back = document.getElementById("form-msg-back-entries");
   const addBtn = document.getElementById("btn-form-msg-add");
   const statusEl = document.getElementById("form-msg-status");
 
@@ -30,8 +30,6 @@ export async function initFormMessagesPage(user, _profile) {
     }
     return;
   }
-
-  if (back) back.href = `./entries.html?id=${encodeURIComponent(webinarId)}`;
 
   if (guard) guard.hidden = false;
   panel.hidden = true;
@@ -58,7 +56,13 @@ export async function initFormMessagesPage(user, _profile) {
     if (guard) guard.hidden = true;
     panel.hidden = false;
 
-    if (titleEl) titleEl.textContent = String(raw.titulo || "Mensajes del formulario");
+    mountWebinarsShortNav(
+      document.getElementById("webinars-short-nav-mount"),
+      "form-messages",
+      webinarId
+    );
+
+    if (titleEl) titleEl.textContent = String(raw.titulo || "Mensajes");
 
     const messages = getMessagingMessagesFromWebinar(raw);
 

@@ -59,6 +59,14 @@
   box-sizing: border-box;
 }
 
+/* Asistente webinars (panel admin): ~95 % del ancho útil */
+body.map-webinars-body[data-shell="app"] .main-container.webinars-main {
+  width: 95%;
+  max-width: none;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .webinars-guard,
 .webinars-panel,
 .webinars-form-shell,
@@ -82,6 +90,18 @@
   gap: 1rem;
   align-items: flex-start;
   margin-bottom: 1.5rem;
+}
+
+.webinars-dashboard-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  align-items: flex-start;
+}
+
+.webinars-dashboard-trash-open {
+  align-self: flex-start;
 }
 
 button.webinars-new-cta {
@@ -432,11 +452,8 @@ button.webinars-new-cta:disabled {
   }
 }
 
-/* Builder: panel + vista previa (mobile first) */
+/* Builder / mensajes: panel + vista previa (ancho hereda 95 % del shell app) */
 .main-container.webinars-main--builder {
-  width: 90%;
-  max-width: 1400px;
-  margin-inline: auto;
   box-sizing: border-box;
 }
 
@@ -467,9 +484,9 @@ button.webinars-new-cta:disabled {
 @media (min-width: 960px) {
   .webinars-builder-layout {
     display: grid;
-    /* 50% / 50% con hueco claro entre editor y vista previa */
+    /* 50% / 50% con hueco claro entre editor y vista previa (2.25rem + 20px) */
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: 2.25rem;
+    column-gap: calc(2.25rem + 20px);
     row-gap: 1.5rem;
     align-items: start;
   }
@@ -813,6 +830,19 @@ button.webinars-new-cta:disabled {
   line-height: 1.5;
 }
 
+/* Builder / mensajes: aviso de guardar para persistir cambios */
+.webinars-save-warning {
+  margin: -0.35rem 0 1.35rem;
+  font-size: 1.08rem;
+  line-height: 1.45;
+  color: #f0e6c8;
+}
+
+.webinars-save-warning strong {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
 .webinars-builder-meta {
   margin-bottom: 1rem;
   padding-bottom: 1rem;
@@ -924,25 +954,6 @@ button.webinars-new-cta:disabled {
   border-color: rgba(168, 159, 143, 0.85);
 }
 
-.webinars-entries-toolbar__right--wrap {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.5rem;
-}
-
-/* Misma barra que Guardar: ya hereda estilos de panel; refuerzo ligero */
-.webinars-preview-download-btn--toolbar.btn-map-secondary {
-  border-color: rgba(244, 240, 237, 0.45);
-  color: rgba(244, 240, 237, 0.95);
-}
-
-.webinars-preview-download-btn--toolbar.btn-map-secondary:hover {
-  border-color: var(--map-light, #f4f0ed);
-  color: var(--map-light, #f4f0ed);
-}
-
 .webinars-preview-column-title {
   margin: 0 0 1rem;
   font-size: 1.05rem;
@@ -970,6 +981,53 @@ button.webinars-new-cta:disabled {
 
 .webinars-dashboard-list-mount {
   min-height: 2rem;
+}
+
+.webinars-trash-panel {
+  margin-top: 0.25rem;
+}
+
+.webinars-trash-panel__head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.webinars-trash-panel__titles {
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+.webinars-trash-panel__title {
+  margin-top: 0;
+}
+
+.webinars-trash-panel__hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.88rem;
+  color: var(--map-gold-muted);
+  line-height: 1.45;
+  max-width: 40rem;
+}
+
+.webinars-trash-panel__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.webinars-trash-list-mount {
+  min-height: 2rem;
+}
+
+.webinars-trash-saved-list .webinars-saved-item__actions {
+  align-items: center;
 }
 
 .webinars-saved-list {
@@ -1235,6 +1293,38 @@ button.webinars-new-cta:disabled {
   gap: 0.5rem;
   justify-content: flex-end;
   margin-left: auto;
+}
+
+/* Cabecera MAP: en el asistente webinars la navegación va en la barra del panel, no en #nav-modules */
+body.map-webinars-body[data-shell="app"] #nav-modules {
+  display: none !important;
+}
+
+.webinars-short-nav-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.webinars-nav-short__current {
+  opacity: 0.92;
+  cursor: default;
+  border: 1px solid rgba(244, 240, 237, 0.35);
+  background: rgba(244, 240, 237, 0.08);
+}
+
+.btn-map-icon-only {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.5rem;
+  padding: 0.45rem 0.6rem;
+}
+
+.btn-map-icon-only svg {
+  display: block;
+  flex-shrink: 0;
 }
 
 .webinars-entries-title {

@@ -3,14 +3,41 @@ import DOMPurify from "dompurify";
 /** @type {boolean} */
 let purifyHooksInstalled = false;
 
+/**
+ * Estilos inline permitidos (alineación + formato que genera styleWithCSS en algunos navegadores).
+ * @param {string} styleValue
+ */
+function isAllowedSanitizedStyle(styleValue) {
+  const raw = String(styleValue || "").trim();
+  if (!raw) return false;
+  const chunks = raw
+    .split(";")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (chunks.length === 0) return false;
+  for (const chunk of chunks) {
+    if (/url\s*\(|expression\s*\(|javascript:|@import/i.test(chunk))
+      return false;
+    const lower = chunk.toLowerCase();
+    if (/^text-decoration(-line)?\s*:/.test(lower)) {
+      continue;
+    }
+    const ok =
+      /^text-align:\s*(left|center|right|justify)\s*$/.test(lower) ||
+      /^font-weight:\s*(normal|bold|bolder|lighter|[1-9]00)\s*$/.test(lower) ||
+      /^font-style:\s*(normal|italic|oblique)\s*$/.test(lower);
+    if (!ok) return false;
+  }
+  return true;
+}
+
 function installPurifyHooks() {
   if (purifyHooksInstalled) return;
   purifyHooksInstalled = true;
   DOMPurify.addHook("uponSanitizeAttribute", (node, data) => {
     if (data.attrName !== "style") return;
     const v = String(data.attrValue || "").trim();
-    const ok = /^\s*text-align:\s*(left|center|right|justify)\s*;?\s*$/i.test(v);
-    if (!ok) {
+    if (!isAllowedSanitizedStyle(v)) {
       data.keepAttr = false;
     }
   });
@@ -89,7 +116,8 @@ export function bindRichToolbar(toolbarHost, editorEl, opts = {}) {
     b.addEventListener("click", () => {
       editorEl.focus();
       try {
-        document.execCommand("styleWithCSS", false, "true");
+        // false => <b>, <i>, <u> en lugar de <span style="...">, compatible con sanitize y correo
+        document.execCommand("styleWithCSS", false, "false");
       } catch {
         /* ignore */
       }
@@ -128,6 +156,30 @@ export function bindRichEditorInput(editorEl, opts) {
     editorEl.removeEventListener("input", run);
     editorEl.removeEventListener("blur", run);
   };
+}
+
+/**
+ * Texto del botón CTA en correo: evita párrafos o divs a ancho completo que
+ * empujan el icono a su propia línea. Mantiene negrita/cursiva/subrayado en línea con el logo.
+ * Requiere DOM (navegador); el HTML de entrada debe estar ya sanitizado.
+ * @param {string} sanitizedHtml
+ */
+export function emailCtaButtonLabelInline(sanitizedHtml) {
+  const raw = String(sanitizedHtml ?? "").trim();
+  if (!raw) return "";
+  if (typeof document === "undefined") return raw;
+  const tmp = document.createElement("div");
+  tmp.innerHTML = raw;
+  tmp.querySelectorAll("br").forEach((br) => {
+    br.replaceWith(document.createTextNode(" "));
+  });
+  tmp.querySelectorAll("p, div").forEach((el) => {
+    const span = document.createElement("span");
+    span.setAttribute("style", "display:inline;margin:0;padding:0;");
+    while (el.firstChild) span.appendChild(el.firstChild);
+    el.replaceWith(span);
+  });
+  return sanitizeWebinarHtml(tmp.innerHTML);
 }
 
 /**

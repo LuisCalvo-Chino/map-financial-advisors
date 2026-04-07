@@ -20,11 +20,13 @@ import {
 import {
   bindRichEditorInput,
   bindRichToolbar,
+  emailCtaButtonLabelInline,
   emailSanitizedBlock,
   htmlFromPlainOrSanitized,
   sanitizeWebinarHtml,
   stripHtmlToPlain,
 } from "./rich-text-toolbar.js";
+import { mountWebinarsShortNav } from "./webinars-short-nav.js";
 
 let currentWebinarId = null;
 let currentWebinarDoc = null;
@@ -252,15 +254,11 @@ async function loadWebinarData(user) {
       list[0]?.id ||
       "welcome";
 
-    const back = document.getElementById("btn-msg-back-builder");
-    if (back && currentWebinarId) {
-      back.href = `./form-messages.html?id=${encodeURIComponent(currentWebinarId)}`;
-    }
-    const entriesLink = document.getElementById("msg-link-entries");
-    if (entriesLink && currentWebinarId) {
-      entriesLink.href = `./entries.html?id=${encodeURIComponent(currentWebinarId)}`;
-      entriesLink.hidden = false;
-    }
+    mountWebinarsShortNav(
+      document.getElementById("webinars-short-nav-mount"),
+      "messages",
+      currentWebinarId
+    );
 
     els.guard.hidden = true;
     els.builder.hidden = false;
@@ -729,17 +727,40 @@ function buildEmailHtmlString() {
           textColor = "#FFFFFF";
         }
         
-        let btnStyle = `display:inline-block;padding:15px 25px;background-color:transparent;color:${textColor};text-decoration:none;font-family:${st.fontCss};font-weight:bold;font-size:16px;`;
-        
-        if (block.type === "instagram") {
-          btnStyle = `display:inline-block;padding:15px 25px;background-color:transparent;color:${textColor};text-decoration:none;font-family:${st.fontCss};font-weight:bold;font-size:16px;`;
-        }
-
-        let iconHtml = iconUrl ? `<img src="${iconUrl}" width="30" style="vertical-align: middle; margin-right: 10px; border: 0;" alt="Icono">` : "";
-
-        const btnLabelHtml = sanitizeWebinarHtml(
+        const btnLabelRaw = sanitizeWebinarHtml(
           htmlFromPlainOrSanitized(String(block.content || block.type))
         );
+        const btnLabelProcessed = stripHtmlToPlain(btnLabelRaw)
+          ? emailCtaButtonLabelInline(btnLabelRaw)
+          : escapeHtml(String(block.content || block.type));
+
+        const btnTextStyleBase = `font-family:${st.fontCss};font-weight:bold;font-size:16px;white-space:nowrap;color:${textColor};`;
+        const btnTextCellStyleSolo = `${btnTextStyleBase}line-height:1.35;`;
+        const btnTextCellStyleWithIcon = `${btnTextStyleBase}line-height:30px;vertical-align:middle;`;
+        const anchorStyle = `display:inline-block;text-decoration:none;color:${textColor};background-color:transparent;`;
+
+        let iconHtml = iconUrl
+          ? `<img src="${iconUrl}" width="30" height="30" style="display:block;border:0;width:30px;height:30px;margin:0;vertical-align:middle;" alt="Icono">`
+          : "";
+
+        const innerTableCommon =
+          "role=\"presentation\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"border-collapse:collapse;margin:0 auto;\"";
+        const cellIcon =
+          "valign=\"middle\" style=\"vertical-align:middle;text-align:center;padding:15px 10px 15px 25px;line-height:30px;\"";
+        const cellTextWithIcon =
+          `valign="middle" align="left" style="vertical-align:middle;text-align:left;padding:15px 25px 15px 8px;${btnTextCellStyleWithIcon}"`;
+        const cellTextSolo =
+          `align="center" valign="middle" style="vertical-align:middle;text-align:center;padding:15px 25px;${btnTextCellStyleSolo}"`;
+
+        let buttonInnerTable = "";
+        if (iconHtml) {
+          buttonInnerTable = `<table ${innerTableCommon}><tr valign="middle" style="vertical-align:middle;">` +
+            `<td ${cellIcon}>${iconHtml}</td>` +
+            `<td ${cellTextWithIcon}>${btnLabelProcessed}</td></tr></table>`;
+        } else {
+          buttonInnerTable = `<table ${innerTableCommon}><tr valign="middle" style="vertical-align:middle;">` +
+            `<td ${cellTextSolo}>${btnLabelProcessed}</td></tr></table>`;
+        }
 
         return `
           <table width="100%" border="0" cellpadding="0" cellspacing="0" class="info-box" style="background-color: ${st.boxBg}; border-left: 4px solid ${st.boxBorder}; padding: 20px; margin: 25px 0;">
@@ -749,8 +770,8 @@ function buildEmailHtmlString() {
                 <table border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto; background-color: ${bgColor}; border-radius: 8px; ${block.type === 'instagram' ? 'background: linear-gradient(45deg, #f09433, #dc2743, #bc1888);' : ''}">
                   <tr>
                     <td align="center" style="border-bottom: 4px solid ${block.type === 'instagram' ? '#a11575' : block.type === 'zoom' ? '#173862' : 'rgba(0,0,0,0.2)'}; border-radius: 8px;">
-                      <a href="${escapeAttr(block.url || '#')}" target="_blank" style="${btnStyle}">
-                        ${iconHtml}${btnLabelHtml || escapeHtml(String(block.content || block.type))}
+                      <a href="${escapeAttr(block.url || '#')}" target="_blank" style="${anchorStyle}">
+                        ${buttonInnerTable}
                       </a>
                     </td>
                   </tr>
@@ -798,7 +819,7 @@ function updatePreview() {
   if (subjLine) {
     const s = String(currentTemplateData.subject || "").trim();
     subjLine.textContent = s
-      ? `Asunto del correo (solo en la bandeja de entrada, no dentro del mensaje): ${s}`
+      ? `Asunto del correo (solo en la bandeja de entrada): ${s}`
       : "";
   }
 }
@@ -923,9 +944,6 @@ ${bodyHtml}
   }
 
   document.getElementById("btn-msg-download-preview-html")?.addEventListener("click", downloadMessagePreviewHtml);
-  document
-    .getElementById("btn-msg-download-preview-html-toolbar")
-    ?.addEventListener("click", downloadMessagePreviewHtml);
 
   document.getElementById("btn-msg-add-block").addEventListener("click", () => {
     const type = document.getElementById("msg-new-block-type").value;

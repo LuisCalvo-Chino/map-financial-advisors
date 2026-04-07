@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MAP Webinars Assistant</title>
+  <title>MAP — Dashboard</title>
   <link
     href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=Montserrat:wght@400;600&family=Poppins:wght@300;400;600&display=swap"
     rel="stylesheet"
@@ -37,22 +37,71 @@
             Central de formularios con envíos automáticos o manuales.
           </p>
         </div>
-        <button
-          type="button"
-          class="btn-map-secondary webinars-new-cta webinars-new-cta--prominent"
-          data-webinars-new
-          disabled
-          aria-disabled="true"
-          title="Esperando confirmación de sesión…"
-        >
-          + Nuevo formulario
-        </button>
+        <div class="webinars-dashboard-hero-actions">
+          <button
+            type="button"
+            id="btn-dashboard-open-trash"
+            class="btn-map-secondary webinars-dashboard-trash-open webinars-btn-with-icon"
+            aria-label="Abrir papelera de formularios archivados"
+            hidden
+          >
+            <svg class="webinars-btn-icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+            <span>Papelera</span>
+          </button>
+          <button
+            type="button"
+            class="btn-map-secondary webinars-new-cta webinars-new-cta--prominent"
+            data-webinars-new
+            disabled
+            aria-disabled="true"
+            title="Esperando confirmación de sesión…"
+          >
+            + Nuevo formulario
+          </button>
+        </div>
       </div>
 
       <p id="webinars-new-status" class="webinars-dashboard-status" role="status" hidden></p>
 
-      <h2 class="webinars-dashboard-list-title">Formularios</h2>
-      <div id="webinars-dashboard-list" class="webinars-dashboard-list-mount"></div>
+      <div id="webinars-dashboard-standard-view">
+        <h2 class="webinars-dashboard-list-title">Tus formularios</h2>
+        <div id="webinars-dashboard-list" class="webinars-dashboard-list-mount"></div>
+      </div>
+
+      <section id="webinars-trash-panel" class="webinars-trash-panel" hidden aria-label="Papelera de formularios">
+        <div class="webinars-trash-panel__head">
+          <div class="webinars-trash-panel__titles">
+            <h2 class="webinars-dashboard-list-title webinars-trash-panel__title">Papelera</h2>
+            <p class="webinars-trash-panel__hint">
+              Formularios archivados. Se eliminan de forma permanente a las <strong>72 horas</strong> de haber sido enviados aquí. Puedes reestablecerlos antes de ese plazo.
+            </p>
+          </div>
+          <div class="webinars-trash-panel__toolbar">
+            <button
+              type="button"
+              id="btn-trash-restore-all"
+              class="btn-map-secondary btn-map-secondary--small webinars-btn-with-icon"
+              aria-label="Reestablecer todos los formularios de la papelera"
+            >
+              <svg class="webinars-btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+              <span>Reestablecer todo</span>
+            </button>
+            <button
+              type="button"
+              id="btn-trash-delete-all"
+              class="btn-map-secondary btn-map-secondary--small btn-map-danger webinars-btn-with-icon"
+              aria-label="Eliminar permanentemente todo lo que hay en la papelera"
+            >
+              <svg class="webinars-btn-icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+              <span>Eliminar todo</span>
+            </button>
+            <button type="button" id="btn-trash-close" class="btn-map-secondary btn-map-secondary--small">
+              Volver al dashboard
+            </button>
+          </div>
+        </div>
+        <div id="webinars-trash-list-mount" class="webinars-trash-list-mount"></div>
+      </section>
     </section>
   </main>
 

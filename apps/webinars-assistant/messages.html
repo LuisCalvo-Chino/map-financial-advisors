@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MAP Webinars - Creador de Mensajes</title>
+  <title>MAP — Mensajes</title>
   <link
     href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=Montserrat:wght@400;600&family=Poppins:wght@300;400;600&display=swap"
     rel="stylesheet"
@@ -31,39 +31,21 @@
     <section id="webinars-messages-builder" class="webinars-builder-layout" hidden>
       <div class="webinars-builder-panel">
         <div class="webinars-builder-page-nav webinars-entries-toolbar" aria-label="Navegación">
-          <div class="webinars-entries-toolbar__left">
-            <a class="btn-map-secondary btn-map-secondary--small" href="./index.html">← Formularios</a>
-            <a
-              id="btn-msg-back-builder"
-              class="btn-map-secondary btn-map-secondary--small"
-              href="./form-messages.html"
-            >← Lista de mensajes</a>
-            <a
-              id="msg-link-entries"
-              class="btn-map-secondary btn-map-secondary--small"
-              href="#"
-              hidden
-            >← Inscripciones</a>
-          </div>
-          <div class="webinars-entries-toolbar__right webinars-entries-toolbar__right--wrap">
-            <button
-              type="button"
-              id="btn-msg-download-preview-html-toolbar"
-              class="btn-map-secondary btn-map-secondary--small webinars-preview-download-btn--toolbar"
-              aria-label="Descargar HTML de la vista previa del mensaje"
-            >
-              Descargar HTML
-            </button>
-            <button type="button" id="btn-msg-save-changes" class="btn-map-primary btn-map-secondary--small">
-              Guardar
+          <div id="webinars-short-nav-mount" class="webinars-entries-toolbar__left webinars-short-nav-row" aria-label="Secciones"></div>
+          <div class="webinars-entries-toolbar__right">
+            <button type="button" id="btn-msg-save-changes" class="btn-map-primary btn-map-secondary--small btn-map-icon-only" aria-label="Guardar">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
             </button>
           </div>
         </div>
 
         <p class="webinars-eyebrow">Configuración de mensajes</p>
-        <h1 class="webinars-builder-title">Mensajes del formulario</h1>
+        <h1 class="webinars-builder-title">Mensajes</h1>
         <p class="webinars-builder-lead">
           Configura los correos automáticos o manuales para este formulario. Los cambios se reflejan en la vista previa.
+        </p>
+        <p class="webinars-save-warning">
+          <strong>ADVERTENCIA: guarda los cambios para que se reflejen en tu mensaje.</strong>
         </p>
 
         <p id="msg-action-status" class="webinars-builder-status" role="status" aria-live="polite"></p>
@@ -328,7 +310,7 @@
                 contenteditable="true"
                 aria-multiline="true"
               ></div>
-              <p class="webinars-field-hint">Se guarda en el formulario al pulsar Guardar. Mismo pie que verán los inscritos si no lo cambias en el builder.</p>
+              <p class="webinars-field-hint">Se guarda en el formulario al pulsar el botón Guardar (icono de disco). Mismo pie que verán los inscritos si no lo cambias en el builder.</p>
             </div>
             <div class="webinars-form-field">
               <label for="msg-header-color">Cabecera</label>

@@ -2,6 +2,8 @@ import { auth, db } from "../../src/config/firebase-config.js";
 import { onAuthStateChanged } from "firebase/auth";
 import {
   collection,
+  deleteDoc,
+  deleteField,
   doc,
   getCountFromServer,
   getDoc,
@@ -12,6 +14,7 @@ import {
   setDoc,
   updateDoc,
   where,
+  writeBatch,
 } from "firebase/firestore";
 import { canAccessWebapp, normalizeUserDoc } from "../../src/data/user-schema.js";
 import { generatePublicHexSlug, slugifyInternal } from "./webinar-defaults.js";
@@ -33,6 +36,7 @@ import {
   setWebinarsHeaderLoading,
   setWebinarsLoggedOutHeader,
 } from "./webinars-header.js";
+import { mountWebinarsShortNav } from "./webinars-short-nav.js";
 
 export { DEFAULT_WEBINAR_LOGO_PATH, resolveWebinarLogoUrl } from "./webinar-defaults.js";
 
@@ -59,6 +63,12 @@ export const EMAIL_DELIVERY_STATE = {
 const PREMIUM_APP_CONFIG = {
   es_gratuita: false,
 };
+
+/** Límite de documentos por dueño en consultas del dashboard / papelera. */
+const DASHBOARD_WEBINAR_FETCH_LIMIT = 200;
+
+/** Tiempo máximo en papelera antes del borrado permanente (72 h). */
+const TRASH_RETENTION_MS = 72 * 60 * 60 * 1000;
 
 const DEFAULT_BRANDING = {
   logoUrl: "",
@@ -261,6 +271,15 @@ function setDashboardNewWebinarButtonsEnabled(enabled) {
       el.title = enabled ? "" : "Esperando confirmación de sesión…";
     }
   });
+  const trashBtn = document.getElementById("btn-dashboard-open-trash");
+  const trashPanel = document.getElementById("webinars-trash-panel");
+  if (trashBtn instanceof HTMLButtonElement) {
+    const trashVisible = trashPanel instanceof HTMLElement && !trashPanel.hidden;
+    trashBtn.disabled = !enabled;
+    trashBtn.setAttribute("aria-disabled", enabled ? "false" : "true");
+    trashBtn.title = enabled ? "" : "Esperando confirmación de sesión…";
+    trashBtn.hidden = !enabled || trashVisible;
+  }
 }
 
 /**
@@ -305,6 +324,264 @@ function resolveActorUser(fallback) {
 }
 
 /**
+ * @param {Record<string, unknown>} row
+ * @returns {number | null}
+ */
+function archivedAtMillis(row) {
+  const a = row.archivedAt;
+  if (a == null) return null;
+  if (typeof /** @type {import("firebase/firestore").Timestamp} */ (a).toMillis === "function") {
+    return /** @type {import("firebase/firestore").Timestamp} */ (a).toMillis();
+  }
+  if (typeof a === "object" && a !== null && "seconds" in a) {
+    return Number(/** @type {{ seconds: number }} */ (a).seconds) * 1000;
+  }
+  return null;
+}
+
+/**
+ * @param {import("firebase/auth").User} actor
+ */
+async function fetchOwnedWebinarRows(actor) {
+  const q = query(
+    collection(db, "webinars"),
+    where("createdBy.uid", "==", actor.uid),
+    limit(DASHBOARD_WEBINAR_FETCH_LIMIT)
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+/**
+ * Borra participantes y el documento webinar (borrado permanente).
+ * @param {string} webinarId
+ */
+async function deleteWebinarDocRecursive(webinarId) {
+  const partCol = collection(db, "webinars", webinarId, "participantes");
+  const snap = await getDocs(partCol);
+  const refs = snap.docs.map((d) => d.ref);
+  const chunk = 400;
+  for (let i = 0; i < refs.length; i += chunk) {
+    const batch = writeBatch(db);
+    refs.slice(i, i + chunk).forEach((r) => batch.delete(r));
+    await batch.commit();
+  }
+  await deleteDoc(doc(db, "webinars", webinarId));
+}
+
+/**
+ * Elimina de Firestore los archivados con más de 72 h en papelera.
+ * @param {import("firebase/auth").User} actor
+ * @param {Record<string, unknown>[]} rows
+ */
+async function purgeExpiredArchivedWebinars(actor, rows) {
+  const now = Date.now();
+  for (const row of rows) {
+    if (!row.archivedAt) continue;
+    if (String(row.createdBy?.uid || "") !== actor.uid) continue;
+    const ms = archivedAtMillis(row);
+    if (ms == null || now - ms < TRASH_RETENTION_MS) continue;
+    try {
+      await deleteWebinarDocRecursive(String(row.id));
+    } catch (e) {
+      console.error("[MAP webinars] purge archived:", row.id, e);
+    }
+  }
+}
+
+/**
+ * @param {Record<string, unknown>} row
+ */
+function formatTrashRemainingLabel(row) {
+  const ms = archivedAtMillis(row);
+  if (ms == null) return "";
+  const deadline = ms + TRASH_RETENTION_MS;
+  const left = deadline - Date.now();
+  if (left <= 0) return "Eliminación en curso…";
+  const h = Math.floor(left / 3600000);
+  const m = Math.floor((left % 3600000) / 60000);
+  if (h >= 48) return `Se elimina en ~${Math.ceil(h / 24)} días`;
+  if (h >= 1) return `Se elimina en ~${h} h`;
+  return `Se elimina en ~${Math.max(1, m)} min`;
+}
+
+/** @type {boolean} */
+let dashboardTrashUiBound = false;
+
+/**
+ * @param {import("firebase/auth").User} user
+ * @param {import("firebase/auth").User} actor
+ */
+async function refreshTrashPanel(user, actor) {
+  const mount = document.getElementById("webinars-trash-list-mount");
+  if (!mount) return;
+
+  let rows = await fetchOwnedWebinarRows(actor);
+  await purgeExpiredArchivedWebinars(actor, rows);
+  rows = await fetchOwnedWebinarRows(actor);
+
+  const archived = rows
+    .filter((r) => Boolean(r.archivedAt))
+    .sort((a, b) => {
+      const ma = archivedAtMillis(a) ?? 0;
+      const mb = archivedAtMillis(b) ?? 0;
+      return mb - ma;
+    });
+
+  if (archived.length === 0) {
+    mount.innerHTML =
+      "<p class=\"dashboard-empty\">La papelera está vacía. Los formularios archivados desde el dashboard aparecerán aquí.</p>";
+    return;
+  }
+
+  mount.innerHTML = `<ul class="webinars-saved-list webinars-trash-saved-list" role="list">${archived
+    .map((row) => {
+      const id = String(row.id);
+      const hint = formatTrashRemainingLabel(row);
+      return `
+      <li class="webinars-saved-item webinars-trash-item" data-webinar-id="${escapeAttr(id)}">
+        <div class="webinars-saved-item__info">
+          <strong>${escapeHtml(String(row.titulo || "Sin título"))}</strong>
+          <span class="webinars-saved-meta">${escapeHtml(hint)} · Estado: ${escapeHtml(webinarEstadoLabel(String(row.estado || "")))}</span>
+        </div>
+        <div class="webinars-saved-item__actions">
+          <button type="button" class="btn-map-secondary btn-map-secondary--small webinars-btn-with-icon" data-trash-restore-id="${escapeAttr(id)}" aria-label="Reestablecer formulario" title="Reestablecer">${ICON_RESTORE}<span>Reestablecer</span></button>
+          <button type="button" class="btn-map-secondary btn-map-secondary--small btn-map-danger webinars-btn-with-icon" data-trash-delete-id="${escapeAttr(id)}" aria-label="Eliminar permanentemente" title="Eliminar permanentemente">${ICON_TRASH}<span></span></button>
+        </div>
+      </li>`;
+    })
+    .join("")}</ul>`;
+
+  mount.querySelectorAll("[data-trash-restore-id]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = /** @type {HTMLElement} */ (btn).dataset.trashRestoreId;
+      if (!id) return;
+      try {
+        await updateDoc(doc(db, "webinars", id), {
+          archivedAt: deleteField(),
+          archivedBy: deleteField(),
+          updatedAt: serverTimestamp(),
+        });
+        await refreshTrashPanel(user, actor);
+        await initDashboardPage(user);
+      } catch (err) {
+        console.error(err);
+        alert("No se pudo reestablecer el formulario.");
+      }
+    });
+  });
+
+  mount.querySelectorAll("[data-trash-delete-id]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = /** @type {HTMLElement} */ (btn).dataset.trashDeleteId;
+      if (!id) return;
+      if (
+        !confirm(
+          "¿Eliminar permanentemente este formulario de la papelera? Se borrarán también las inscripciones. No se puede deshacer."
+        )
+      )
+        return;
+      try {
+        await deleteWebinarDocRecursive(id);
+        await refreshTrashPanel(user, actor);
+        await initDashboardPage(user);
+      } catch (err) {
+        console.error(err);
+        alert("No se pudo eliminar el formulario. Revisa permisos y la consola.");
+      }
+    });
+  });
+}
+
+/**
+ * @param {import("firebase/auth").User} user
+ */
+function bindDashboardTrashUi(user) {
+  if (dashboardTrashUiBound) return;
+  dashboardTrashUiBound = true;
+
+  const openBtn = document.getElementById("btn-dashboard-open-trash");
+  const closeBtn = document.getElementById("btn-trash-close");
+  const panel = document.getElementById("webinars-trash-panel");
+  const standard = document.getElementById("webinars-dashboard-standard-view");
+
+  openBtn?.addEventListener("click", async () => {
+    const actor = await getActorForFirestore(user);
+    if (!actor || !panel || !standard) return;
+    await refreshTrashPanel(user, actor);
+    panel.hidden = false;
+    standard.hidden = true;
+    if (openBtn) openBtn.hidden = true;
+  });
+
+  closeBtn?.addEventListener("click", () => {
+    if (panel) panel.hidden = true;
+    if (standard) standard.hidden = false;
+    if (openBtn) openBtn.hidden = false;
+  });
+
+  document.getElementById("btn-trash-restore-all")?.addEventListener("click", async () => {
+    const actor = await getActorForFirestore(user);
+    if (!actor) return;
+    let all = await fetchOwnedWebinarRows(actor);
+    await purgeExpiredArchivedWebinars(actor, all);
+    const rows = (await fetchOwnedWebinarRows(actor)).filter((r) => Boolean(r.archivedAt));
+    if (rows.length === 0) {
+      alert("No hay formularios en la papelera.");
+      return;
+    }
+    if (
+      !confirm(
+        `¿Reestablecer ${rows.length} formulario(s) al dashboard? Volverán a aparecer en «Tus formularios».`
+      )
+    )
+      return;
+    try {
+      for (const row of rows) {
+        await updateDoc(doc(db, "webinars", String(row.id)), {
+          archivedAt: deleteField(),
+          archivedBy: deleteField(),
+          updatedAt: serverTimestamp(),
+        });
+      }
+      await refreshTrashPanel(user, actor);
+      await initDashboardPage(user);
+    } catch (err) {
+      console.error(err);
+      alert("No se pudo reestablecer todos los formularios.");
+    }
+  });
+
+  document.getElementById("btn-trash-delete-all")?.addEventListener("click", async () => {
+    const actor = await getActorForFirestore(user);
+    if (!actor) return;
+    let all = await fetchOwnedWebinarRows(actor);
+    await purgeExpiredArchivedWebinars(actor, all);
+    const rows = (await fetchOwnedWebinarRows(actor)).filter((r) => Boolean(r.archivedAt));
+    if (rows.length === 0) {
+      alert("No hay formularios en la papelera.");
+      return;
+    }
+    if (
+      !confirm(
+        `¿Eliminar permanentemente los ${rows.length} formulario(s) que están en la papelera? Se borrarán también las inscripciones. No se puede deshacer.`
+      )
+    )
+      return;
+    try {
+      for (const row of rows) {
+        await deleteWebinarDocRecursive(String(row.id));
+      }
+      await refreshTrashPanel(user, actor);
+      await initDashboardPage(user);
+    } catch (err) {
+      console.error(err);
+      alert("No se pudo vaciar la papelera.");
+    }
+  });
+}
+
+/**
  * @param {import("firebase/auth").User} user
  */
 async function initDashboardPage(user) {
@@ -323,20 +600,16 @@ async function initDashboardPage(user) {
   }
 
   bindDashboardNewWebinarButtons(actor);
+  bindDashboardTrashUi(user);
   processOwnedEmailQueue();
 
   mount.innerHTML = "<p class=\"webinars-list-loading\">Cargando tus formularios…</p>";
 
   try {
-    const q = query(
-      collection(db, "webinars"),
-      where("createdBy.uid", "==", actor.uid),
-      limit(50)
-    );
-    const snap = await getDocs(q);
-    const rows = snap.docs
-      .map((d) => ({ id: d.id, ...d.data() }))
-      .filter((row) => !row.archivedAt); // Filtrar archivados
+    let allRows = await fetchOwnedWebinarRows(actor);
+    await purgeExpiredArchivedWebinars(actor, allRows);
+    allRows = await fetchOwnedWebinarRows(actor);
+    const rows = allRows.filter((row) => !row.archivedAt);
 
     rows.sort((a, b) => {
       const fa = a.dashboardFavorite ? 1 : 0;
@@ -369,7 +642,7 @@ async function initDashboardPage(user) {
         </div>
         <div class="webinars-saved-item__actions">
           <a class="btn-map-secondary btn-map-secondary--small webinars-btn-with-icon" href="./entries.html?id=${escapeAttr(id)}">${ICON_OPEN}<span>Abrir</span></a>
-          <button type="button" class="btn-map-secondary btn-map-secondary--small btn-map-danger webinars-btn-with-icon" data-archive-id="${escapeAttr(id)}">${ICON_TRASH}<span>Papelera</span></button>
+          <button type="button" class="btn-map-secondary btn-map-secondary--small btn-map-danger webinars-btn-with-icon" data-archive-id="${escapeAttr(id)}" aria-label="Enviar formulario a la papelera" title="Papelera">${ICON_TRASH}<span>Papelera</span></button>
           <div class="webinars-actions-menu-wrap">
             <button type="button" class="webinars-menu-dots" aria-haspopup="true" aria-expanded="false" aria-label="Más opciones">${ICON_DOTS}</button>
             <div class="webinars-actions-dropdown" hidden>
@@ -415,7 +688,7 @@ async function initDashboardPage(user) {
           if (!id) return;
           if (
             confirm(
-              "¿Mover este formulario a la papelera? Dejará de aparecer en la lista; los datos se conservan."
+              "¿Enviar este formulario a la papelera? Dejará de aparecer en el dashboard (72 h hasta eliminación automática)."
             )
           ) {
             try {
@@ -696,14 +969,8 @@ function deepClone(obj) {
 }
 
 function syncBuilderEntriesNavLink() {
-  const link = document.getElementById("builder-link-entries");
-  if (!link) return;
-  if (builderFirestoreId) {
-    link.href = `./entries.html?id=${encodeURIComponent(builderFirestoreId)}`;
-    link.hidden = false;
-  } else {
-    link.hidden = true;
-  }
+  const mount = document.getElementById("webinars-short-nav-mount");
+  mountWebinarsShortNav(mount, "builder", builderFirestoreId);
 }
 
 function populateBuilderFormFromDraft() {
@@ -929,6 +1196,7 @@ function webinarEstadoLabel(estado) {
 
 const ICON_OPEN = `<svg class="webinars-btn-icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
 const ICON_TRASH = `<svg class="webinars-btn-icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>`;
+const ICON_RESTORE = `<svg class="webinars-btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>`;
 const ICON_DOTS = `<svg class="webinars-btn-icon webinars-btn-icon--dots" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>`;
 
 function closeAllDashboardRowMenus() {
@@ -1238,7 +1506,7 @@ async function saveWebinarToFirestore(user) {
  */
 async function publishWebinar(user) {
   if (!builderFirestoreId || !builderDraft) {
-    setBuilderStatus("Primero guarda el formulario (Guardar cambios).", true);
+    setBuilderStatus("Primero guarda el formulario (botón Guardar / icono de disco).", true);
     return;
   }
 
