@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Política de Privacidad - MAP</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body { background-color: #2a2c2c; color: #f4f0ed; font-family: 'Poppins', sans-serif; margin: 0; padding: 20px; }
+        .legal-container { 
+            max-width: 850px; 
+            margin: 40px auto; 
+            padding: 50px; 
+            background: #1a1a1a; 
+            border-radius: 12px; 
+            border-top: 6px solid #173862; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            line-height: 1.8;
+        }
+        .legal-header { 
+            border-bottom: 1px solid #a89f8f; 
+            margin-bottom: 40px; 
+            padding-bottom: 20px; 
+        }
+        h1 { font-family: 'Montserrat', sans-serif; color: #f4f0ed; margin: 0; font-size: 2rem; }
+        h2 { 
+            font-family: 'Montserrat', sans-serif; 
+            color: #a89f8f; 
+            font-size: 1.1rem; 
+            text-transform: uppercase; 
+            letter-spacing: 1.5px; 
+            margin-top: 30px;
+        }
+        p { color: #d1d1d1; font-weight: 300; }
+        .back-link { 
+            display: inline-flex; 
+            align-items: center; 
+            margin-top: 40px; 
+            color: #708090; 
+            text-decoration: none; 
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+        .back-link:hover { color: #f4f0ed; }
+    </style>
+  <link rel="stylesheet" crossorigin href="../assets/brand-yQ7YVYfT.css">
+</head>
+<body>
+    <div class="legal-container">
+        <h1>Política de Privacidad</h1>
+        <p>Compromiso de Confidencialidad y Seguridad de Datos</p>
+
+        <section>
+            <h2>1. Tratamiento de Datos Sensibles</h2>
+            <p>En MAP, la privacidad de la información de inversión y salud es nuestra prioridad. Aplicamos una política de "Privacidad desde el Diseño", lo que significa que el sistema está estructurado para que ni MAP ni terceros tengan acceso a las bases de datos personales (Google Sheets) vinculadas por el Asesor.</p>
+        </section>
+
+        <div class="vault-box">
+            <strong>Seguridad de Credenciales (Tokens API):</strong> 
+            Toda conexión con servicios externos como Instagram, Zoom o Calendly se realiza mediante el protocolo OAuth2. Los tokens de acceso se almacenan de forma encriptada en los servidores de Google Firebase, siendo invisibles para el personal administrativo y solo utilizados durante la ejecución de las tareas del Asesor.
+        </div>
+
+        <section>
+            <h2>2. Recolección de Información Técnica</h2>
+            <p>Recopilamos únicamente los datos necesarios para el funcionamiento del Dashboard: correo electrónico de acceso, nombre de usuario y preferencias de módulos habilitados. No realizamos seguimiento de comportamiento (tracking) con fines publicitarios.</p>
+        </section>
+
+        <section>
+            <h2>3. Derechos de Acceso y Rectificación</h2>
+            <p>El Asesor tiene el derecho absoluto de desvincular sus cuentas externas en cualquier momento desde el panel de configuración de su perfil. Al eliminar la cuenta en el sistema MAP, todos los tokens y registros asociados en Firestore serán eliminados permanentemente de nuestra bóveda segura.</p>
+        </section>
+
+        <section>
+            <h2>4. Transferencia de Datos</h2>
+            <p>MAP no vende, cede ni intercambia bases de datos con terceros. La transferencia de información ocurre únicamente entre el portal y las APIs autorizadas explícitamente por el usuario para el cumplimiento de sus labores de asesoría.</p>
+        </section>
+
+        <a href="../index.html" class="back-link">← Volver al Portal Principal</a>
+    </div>
+</body>
+</html>
