@@ -5,6 +5,11 @@ dist/
 # Notas y documentación solo local (no subir a GitHub)
 local-dev/
 
+# Instrucciones / planes en la raíz del repo (solo local).
+# README.md no se ignora: sigue siendo la ficha pública del proyecto en GitHub.
+/PROJECT_OVERVIEW.md
+/PLAN_*.md
+
 # Secretos y entorno local (nunca subir)
 .env
 .env.local
