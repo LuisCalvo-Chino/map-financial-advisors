@@ -24,9 +24,8 @@ local-dev/
 serviceAccount*.json
 *-firebase-adminsdk-*.json
 
-# Scripts Windows locales (no subir), excepto el asistente de push al repo
+# Scripts Windows (.bat) solo en tu PC; no versionar (evita exponer flujo de push en el repo público)
 *.bat
-!push-github-map.bat
 
 # Sistema operativo
 .DS_Store
